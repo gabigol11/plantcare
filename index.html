@@ -1,1 +1,290 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#4f9b4f">
+<title>PlantCare</title>
 
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+<aside class="sidebar">
+  <div class="brand"><span>🌿</span> PlantCare</div>
+
+  <nav class="nav">
+    <button class="active" data-page="home"><i>⌂</i> Início</button>
+    <button data-page="plants"><i>🪴</i> Minhas Plantas</button>
+    <button data-page="history"><i>◷</i> Histórico</button>
+    <button data-page="settings"><i>⚙</i> Configurações</button>
+  </nav>
+
+  <div class="side-info">
+    <div class="online">● Sistema conectado</div>
+    Todos os sensores estão funcionando normalmente.
+  </div>
+</aside>
+
+<main>
+
+<header class="top">
+  <div>
+    <div class="mobile-brand">🌿 PlantCare</div>
+    <h1 id="greeting">Olá! 👋</h1>
+    <p>Acompanhe a saúde das suas plantas.</p>
+  </div>
+
+  <div class="profile">
+    <div class="avatar">🌱</div>
+    <div>
+      <strong>Meu jardim</strong>
+      <small>4 plantas conectadas</small>
+    </div>
+  </div>
+</header>
+
+<section id="home" class="page active">
+
+  <div class="hero">
+
+    <div class="plant-preview">
+      <div class="plant">
+        <div class="stem"></div>
+        <div class="leaf l1"></div>
+        <div class="leaf l2"></div>
+        <div class="leaf l3"></div>
+        <div class="leaf l4"></div>
+        <div class="leaf l5"></div>
+        <div class="soil"></div>
+        <div class="pot"></div>
+      </div>
+    </div>
+
+    <div class="hero-content">
+
+      <div class="eyebrow">
+        MONITORAMENTO EM TEMPO REAL
+      </div>
+
+      <h2 id="mainPlantName">Jiboia</h2>
+
+      <p class="hero-sub" id="mainStatus">
+        Sua planta está em boas condições.
+      </p>
+
+      <div class="humidity">
+
+        <div class="ring" id="mainRing">
+          <span id="mainHumidity">60%</span>
+        </div>
+
+        <div>
+          <strong>Umidade Atual</strong>
+          <p>
+            Última irrigação:
+            <b id="lastWater">2 horas atrás</b>
+          </p>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="waterBtn">
+          💧 Regar Agora
+        </button>
+
+        <button class="btn secondary" id="scheduleBtn">
+          ▣ Configurar Horário
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="head">
+    <h2>Minhas Plantas</h2>
+    <button class="link" data-page="plants">
+      Ver todas →
+    </button>
+  </div>
+
+  <div class="grid" id="homePlants"></div>
+
+  <div class="lower">
+
+    <div class="panel">
+      <h3>Últimas irrigações</h3>
+      <div id="homeHistory"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Dicas para seu jardim 🌱</h3>
+
+      <div class="tip">
+        💡 Evite deixar a terra constantemente encharcada.
+      </div>
+
+      <div class="tip">
+        ☀️ Observe a luminosidade antes de mudar sua planta de lugar.
+      </div>
+
+      <div class="tip">
+        💧 A irrigação automática pode ser ativada nas configurações.
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<section id="plants" class="page">
+
+  <div class="head">
+    <h2>Minhas Plantas</h2>
+
+    <button class="btn primary" id="addPlant">
+      + Adicionar planta
+    </button>
+  </div>
+
+  <div class="big-panel">
+    <div class="list" id="plantsList"></div>
+  </div>
+
+</section>
+
+<section id="history" class="page">
+
+  <div class="head">
+    <h2>Histórico de Irrigação</h2>
+    <span class="muted">Últimos registros</span>
+  </div>
+
+  <div class="big-panel" id="fullHistory"></div>
+
+</section>
+
+<section id="settings" class="page">
+
+  <div class="head">
+    <h2>Configurações</h2>
+  </div>
+
+  <div class="settings">
+
+    <div class="setting">
+      <div>
+        <strong>Irrigação automática</strong>
+        <p class="muted">
+          Regar quando a umidade estiver baixa.
+        </p>
+      </div>
+
+      <button class="toggle" data-toggle="auto"></button>
+    </div>
+
+    <div class="setting">
+      <div>
+        <strong>Notificações</strong>
+        <p class="muted">
+          Avisar quando uma planta precisar de água.
+        </p>
+      </div>
+
+      <button class="toggle on" data-toggle="notifications"></button>
+    </div>
+
+    <div class="setting">
+      <div>
+        <strong>Atualização dos sensores</strong>
+        <p class="muted">
+          Intervalo atual: 5 minutos.
+        </p>
+      </div>
+
+      <button class="btn secondary" id="sensorInterval">
+        Alterar
+      </button>
+    </div>
+
+  </div>
+
+</section>
+
+</main>
+</div>
+
+<nav class="mobile-nav">
+
+  <button class="active" data-page="home">
+    <span>⌂</span>Início
+  </button>
+
+  <button data-page="plants">
+    <span>🪴</span>Plantas
+  </button>
+
+  <button data-page="history">
+    <span>◷</span>Histórico
+  </button>
+
+  <button data-page="settings">
+    <span>⚙</span>Ajustes
+  </button>
+
+</nav>
+
+<div class="modal-bg" id="modalBg">
+
+  <div class="modal">
+
+    <h3 id="modalTitle">
+      Configurar irrigação
+    </h3>
+
+    <div id="modalBody">
+
+      <label>Planta</label>
+      <select id="plantSelect"></select>
+
+      <label>Horário</label>
+      <input id="scheduleTime" type="time" value="08:00">
+
+      <label>Umidade mínima</label>
+
+      <select id="minHumidity">
+        <option>30%</option>
+        <option selected>40%</option>
+        <option>50%</option>
+        <option>60%</option>
+      </select>
+
+    </div>
+
+    <div class="modal-actions">
+
+      <button class="btn secondary" id="closeModal">
+        Cancelar
+      </button>
+
+      <button class="btn primary" id="saveModal">
+        Salvar
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
