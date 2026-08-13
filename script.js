@@ -289,35 +289,52 @@ function selectPlant(id){
     );
 }
 
-function waterNow(){
+async function waterNow(){
 
-    const p=plants[0];
+    try {
 
-    const before=p.humidity;
+        const resposta = await fetch(
+            "https://lbwhdmbsudonlquchtow.supabase.co/rest/v1/teste",
+            {
+                method: "POST",
 
-    p.humidity=
-        Math.min(
-            100,
-            p.humidity+18
+                headers: {
+                    "Content-Type": "application/json",
+                    "apikey": "SUA_CHAVE_SUPABASE",
+                    "Authorization": "Bearer SUA_CHAVE_SUPABASE",
+                    "Prefer": "return=minimal"
+                },
+
+                body: JSON.stringify({
+                    mensagem: "REGAR"
+                })
+            }
         );
 
-    p.time="agora";
+        if (resposta.ok) {
 
-    history.unshift({
-        plant:p.name,
-        icon:p.icon,
-        time:"Agora",
-        value:"+"+(p.humidity-before)+"%"
-    });
+            toast("💧 Comando de rega enviado!");
 
-    render();
+        } else {
 
-    toast(
-        "💧 "+p.name+
-        " foi irrigada com sucesso!"
-    );
+            console.log(
+                "Erro Supabase:",
+                resposta.status,
+                await resposta.text()
+            );
+
+            toast("❌ Erro ao enviar comando.");
+
+        }
+
+    } catch (erro) {
+
+        console.log("Erro:", erro);
+
+        toast("❌ Não foi possível conectar ao servidor.");
+
+    }
 }
-
 document.getElementById(
     "waterBtn"
 ).onclick=waterNow;
