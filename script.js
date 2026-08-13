@@ -300,8 +300,8 @@ async function waterNow(){
 
                 headers: {
                     "Content-Type": "application/json",
-                    "apikey": "SUA_CHAVE_SUPABASE",
-                    "Authorization": "Bearer SUA_CHAVE_SUPABASE",
+                    "apikey": "sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR",
+                    "Authorization": "Bearer sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR",
                     "Prefer": "return=minimal"
                 },
 
