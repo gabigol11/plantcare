@@ -54,7 +54,7 @@ const supabaseUrl = "https://lbwhdmbsudonlquchtow.supabase.co";
 const supabaseKey = "sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
 
 // ======================================================
-// CONVERTE DATA/HORA PARA SÃO PAULO
+// CONVERTE DATA/HORA PARA FORMATO AMIGÁVEL (Hoje, Ontem, etc)
 // ======================================================
 function formatarDataBrasil(isoString) {
     if (!isoString) {
@@ -67,17 +67,37 @@ function formatarDataBrasil(isoString) {
         return "Data inválida";
     }
 
-    return data.toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit"
-    });
-}
+    // Pega a data atual do dispositivo do usuário
+    const agora = new Date();
 
+    // Utilitário para formatar hora em HH:mm (ex: 15:30)
+    const horaFormatada = data.toLocaleTimeString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+    // Zera horas para comparar apenas os dias (Ano, Mês, Dia)
+    const dData = new Date(data.getFullYear(), data.getMonth(), data.getDate());
+    const dAgora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+
+    // Diferença em dias
+    const diffDias = Math.round((dAgora - dData) / (1000 * 60 * 60 * 24));
+
+    if (diffDias === 0) {
+        return `Hoje, às ${horaFormatada}`;
+    } else if (diffDias === 1) {
+        return `Ontem, às ${horaFormatada}`;
+    } else {
+        // Para dias mais antigos: mostra "DD/MM, às HH:mm"
+        const diaMes = data.toLocaleDateString("pt-BR", {
+            timeZone: "America/Sao_Paulo",
+            day: "2-digit",
+            month: "2-digit"
+        });
+        return `${diaMes}, às ${horaFormatada}`;
+    }
+}
 // ======================================================
 // BUSCAR HISTÓRICO DO SUPABASE (Com atualização da última rega)
 // ======================================================
