@@ -81,11 +81,13 @@ function formatarDataBrasil(isoString) {
 // ======================================================
 // BUSCAR HISTÓRICO DO SUPABASE (Apenas as 5 últimas)
 // ======================================================
+// ======================================================
+// BUSCAR HISTÓRICO DO SUPABASE (Com atualização da última rega)
+// ======================================================
 async function fetchHistoryFromSupabase() {
     try {
         console.log("[Supabase] Buscando histórico...");
 
-        // Adicionado &limit=5 no final da URL para buscar apenas as 5 últimas do banco
         const resposta = await fetch(
             `${supabaseUrl}/rest/v1/comandos?select=*&order=horarios.desc&limit=5`,
             {
@@ -99,7 +101,6 @@ async function fetchHistoryFromSupabase() {
 
         console.log("[Supabase] HTTP:", resposta.status);
 
-        // ERRO HTTP
         if (!resposta.ok) {
             const erroTexto = await resposta.text();
             console.error("[Supabase] Erro:", erroTexto);
@@ -107,6 +108,55 @@ async function fetchHistoryFromSupabase() {
             render();
             return;
         }
+
+        const dados = await resposta.json();
+        console.log("[Supabase] Dados recebidos:", dados);
+
+        if (!Array.isArray(dados) || dados.length === 0) {
+            history = [];
+            render();
+            return;
+        }
+
+        // 1. MONTA HISTÓRICO
+        history = dados
+            .map(item => {
+                const dataBruta = item["horarios"] || item["horários"] || item["created_at"];
+                const textoMensagem = item.mensagem || item.comando || "Comando registrado";
+
+                return {
+                    plant: "PlantCare",
+                    icon: "💧",
+                    time: formatarDataBrasil(dataBruta),
+                    value: textoMensagem
+                };
+            })
+            .slice(0, 5);
+
+        // 2. ATUALIZA A ÚLTIMA IRRIGACÃO NO CARD PRINCIPAL REAL-TIME
+        if (history.length > 0) {
+            // Pega o horário do registro mais recente
+            const ultimaRega = history[0].time; 
+            
+            // Atualiza no array de plantas
+            plants[0].time = ultimaRega;
+
+            // Atualiza direto no elemento HTML da tela se ele existir
+            const lastWaterEl = document.getElementById("lastWater");
+            if (lastWaterEl) {
+                lastWaterEl.textContent = ultimaRega;
+            }
+        }
+
+        // ATUALIZA SITE
+        render();
+
+    } catch (erro) {
+        console.error("[Supabase] Erro de conexão:", erro);
+        history = [];
+        render();
+    }
+}
 
         // CONVERTE RESPOSTA
         const dados = await resposta.json();
