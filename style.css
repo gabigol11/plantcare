@@ -763,3 +763,42 @@ main{
         width:100%
     }
 }
+/* BOTÕES DE SETA PARA NAVEGAR ENTRE PLANTAS */
+.plant-preview {
+    position: relative;
+}
+
+.nav-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid var(--bd);
+    color: var(--gd);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 5;
+    backdrop-filter: blur(4px);
+}
+
+.nav-arrow:hover {
+    background: #ffffff;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.nav-arrow.prev {
+    left: 12px;
+}
+
+.nav-arrow.next {
+    right: 12px;
+}
