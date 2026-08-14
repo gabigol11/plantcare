@@ -99,7 +99,7 @@ async function fetchHistoryFromSupabase() {
         console.log("[Supabase] Buscando histórico...");
 
         const resposta = await fetch(
-            `${supabaseUrl}/rest/v1/comandos?select=*&order=horários.desc`,
+            `${supabaseUrl}/rest/v1/comandos?select=*&order=horarios.desc`,
             {
                 method: "GET",
 
@@ -171,7 +171,7 @@ async function fetchHistoryFromSupabase() {
 
         history = dados.map(item => {
             // Tenta pegar o campo da data (com ou sem acento / created_at)
-            const dataBruta = item["horários"] || item["horarios"] || item["created_at"];
+            const dataBruta = item["horarios"] || item["horarios"] || item["created_at"];
             
             // Pega a mensagem do ESP32 ou coloca um padrão
             const textoMensagem = item.mensagem || item.comando || "Comando registrado";
