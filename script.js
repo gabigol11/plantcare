@@ -294,7 +294,7 @@ async function waterNow(){
     try {
 
         const resposta = await fetch(
-            "https://lbwhdmbsudonlquchtow.supabase.co/rest/v1/comandos",
+            "https://lbwhdmbsudonlquchtow.supabase.co/rest/v1/mensagem",
             {
                 method: "POST",
 
