@@ -6,6 +6,7 @@ const plants = [
         id: 1,
         name: "Jiboia",
         icon: "🌿",
+        img: "img/jiboia.png",
         humidity: 60,
         status: "Ideal",
         color: "green",
@@ -15,6 +16,7 @@ const plants = [
         id: 2,
         name: "Samambaia",
         icon: "🌿",
+        img: "img/samambaia.png",
         humidity: 70,
         status: "Ideal",
         color: "green",
@@ -24,6 +26,7 @@ const plants = [
         id: 3,
         name: "Suculenta",
         icon: "🪴",
+        img: "img/suculenta.png",
         humidity: 45,
         status: "Atenção",
         color: "orange",
@@ -33,12 +36,16 @@ const plants = [
         id: 4,
         name: "Cacto",
         icon: "🌵",
+        img: "img/cacto.png",
         humidity: 30,
         status: "Precisa de água",
         color: "red",
         time: "há 3 min"
     }
 ];
+
+// Índice da planta selecionada atualmente na tela principal
+let currentPlantIndex = 0;
 
 // ======================================================
 // HISTÓRICO E NAVEGAÇÃO
@@ -67,21 +74,17 @@ function formatarDataBrasil(isoString) {
         return "Data inválida";
     }
 
-    // Pega a data atual do dispositivo do usuário
     const agora = new Date();
 
-    // Utilitário para formatar hora em HH:mm (ex: 15:30)
     const horaFormatada = data.toLocaleTimeString("pt-BR", {
         timeZone: "America/Sao_Paulo",
         hour: "2-digit",
         minute: "2-digit"
     });
 
-    // Zera horas para comparar apenas os dias (Ano, Mês, Dia)
     const dData = new Date(data.getFullYear(), data.getMonth(), data.getDate());
     const dAgora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
 
-    // Diferença em dias
     const diffDias = Math.round((dAgora - dData) / (1000 * 60 * 60 * 24));
 
     if (diffDias === 0) {
@@ -89,7 +92,6 @@ function formatarDataBrasil(isoString) {
     } else if (diffDias === 1) {
         return `Ontem, às ${horaFormatada}`;
     } else {
-        // Para dias mais antigos: mostra "DD/MM, às HH:mm"
         const diaMes = data.toLocaleDateString("pt-BR", {
             timeZone: "America/Sao_Paulo",
             day: "2-digit",
@@ -98,8 +100,9 @@ function formatarDataBrasil(isoString) {
         return `${diaMes}, às ${horaFormatada}`;
     }
 }
+
 // ======================================================
-// BUSCAR HISTÓRICO DO SUPABASE (Com atualização da última rega)
+// BUSCAR HISTÓRICO DO SUPABASE
 // ======================================================
 async function fetchHistoryFromSupabase() {
     try {
@@ -127,7 +130,6 @@ async function fetchHistoryFromSupabase() {
         }
 
         const dados = await resposta.json();
-        console.log("[Supabase] Dados recebidos:", dados);
 
         if (!Array.isArray(dados) || dados.length === 0) {
             history = [];
@@ -150,21 +152,17 @@ async function fetchHistoryFromSupabase() {
             })
             .slice(0, 5);
 
-        // 2. ATUALIZA A ÚLTIMA IRRIGACÃO NO CARD PRINCIPAL REAL-TIME
+        // 2. ATUALIZA A ÚLTIMA IRRIGACÃO DA PLANTA ATUAL
         if (history.length > 0) {
             const ultimaRega = history[0].time; 
-            
-            // Atualiza no objeto da planta principal
-            plants[0].time = ultimaRega;
+            plants[currentPlantIndex].time = ultimaRega;
 
-            // Atualiza direto no elemento HTML da tela se ele existir
             const lastWaterEl = document.getElementById("lastWater");
             if (lastWaterEl) {
                 lastWaterEl.textContent = ultimaRega;
             }
         }
 
-        // ATUALIZA O RESTANTE DO SITE
         render();
 
     } catch (erro) {
@@ -303,7 +301,6 @@ function render() {
         `;
     }
 
-    // COLOCA HISTÓRICO NAS DUAS ÁREAS
     const homeHistory = document.getElementById("homeHistory");
     if (homeHistory) {
         homeHistory.innerHTML = hist;
@@ -314,7 +311,7 @@ function render() {
         fullHistory.innerHTML = hist;
     }
 
-    // SELECT DE PLANTAS
+    // SELECT DE PLANTAS NO MODAL
     const plantSelect = document.getElementById("plantSelect");
     if (plantSelect) {
         plantSelect.innerHTML = plants
@@ -327,11 +324,20 @@ function render() {
 }
 
 // ======================================================
-// ATUALIZA PLANTA PRINCIPAL
+// ATUALIZA PLANTA PRINCIPAL (HERO)
 // ======================================================
 function updateMain() {
-    const p = plants[0];
+    const p = plants[currentPlantIndex];
+    if (!p) return;
+
     const pct = p.humidity;
+
+    // Imagem da planta
+    const mainPlantImg = document.getElementById("mainPlantImg");
+    if (mainPlantImg && p.img) {
+        mainPlantImg.src = p.img;
+        mainPlantImg.alt = p.name;
+    }
 
     const mainPlantName = document.getElementById("mainPlantName");
     if (mainPlantName) {
@@ -365,7 +371,32 @@ function updateMain() {
 }
 
 // ======================================================
-// NAVEGAÇÃO
+// NAVEGAÇÃO POR SETAS NO HERO CARD
+// ======================================================
+const prevBtn = document.getElementById("prevPlantBtn");
+if (prevBtn) {
+    prevBtn.onclick = () => {
+        currentPlantIndex--;
+        if (currentPlantIndex < 0) {
+            currentPlantIndex = plants.length - 1;
+        }
+        updateMain();
+    };
+}
+
+const nextBtn = document.getElementById("nextPlantBtn");
+if (nextBtn) {
+    nextBtn.onclick = () => {
+        currentPlantIndex++;
+        if (currentPlantIndex >= plants.length) {
+            currentPlantIndex = 0;
+        }
+        updateMain();
+    };
+}
+
+// ======================================================
+// NAVEGAÇÃO DE PÁGINAS
 // ======================================================
 function navigate(page) {
     activePage = page;
@@ -384,9 +415,6 @@ function navigate(page) {
     });
 }
 
-// ======================================================
-// CLIQUE NAVEGAÇÃO
-// ======================================================
 document.addEventListener("click", e => {
     const b = e.target.closest("[data-page]");
     if (b) {
@@ -395,17 +423,17 @@ document.addEventListener("click", e => {
 });
 
 // ======================================================
-// SELECIONAR PLANTA
+// SELECIONAR PLANTA POR ID
 // ======================================================
 function selectPlant(id) {
-    const p = plants.find(x => x.id === id);
-    if (!p) return;
+    const idx = plants.findIndex(x => x.id === id);
+    if (idx === -1) return;
 
-    plants[0] = { ...p };
+    currentPlantIndex = idx;
 
     updateMain();
     navigate("home");
-    toast("🌱 " + p.name + " selecionada");
+    toast("🌱 " + plants[idx].name + " selecionada");
 }
 
 // ======================================================
@@ -428,8 +456,6 @@ async function waterNow() {
             })
         });
 
-        console.log("[Supabase] HTTP:", resposta.status);
-
         if (resposta.ok) {
             toast("💧 Comando de rega enviado!");
             setTimeout(fetchHistoryFromSupabase, 2000);
@@ -444,16 +470,13 @@ async function waterNow() {
     }
 }
 
-// ======================================================
-// BOTÃO REGAR
-// ======================================================
 const waterBtn = document.getElementById("waterBtn");
 if (waterBtn) {
     waterBtn.onclick = waterNow;
 }
 
 // ======================================================
-// CONFIGURAR HORÁRIO
+// CONFIGURAR HORÁRIO / MODAL
 // ======================================================
 const scheduleBtn = document.getElementById("scheduleBtn");
 if (scheduleBtn) {
@@ -463,9 +486,6 @@ if (scheduleBtn) {
     };
 }
 
-// ======================================================
-// FECHAR MODAL
-// ======================================================
 const closeModal = document.getElementById("closeModal");
 if (closeModal) {
     closeModal.onclick = () => {
@@ -473,9 +493,6 @@ if (closeModal) {
     };
 }
 
-// ======================================================
-// SALVAR MODAL
-// ======================================================
 const saveModal = document.getElementById("saveModal");
 if (saveModal) {
     saveModal.onclick = () => {
@@ -500,6 +517,7 @@ if (addPlant) {
                 id: Date.now(),
                 name: name.trim(),
                 icon: "🌱",
+                img: "img/jiboia.png", // Imagem padrão
                 humidity: 50,
                 status: "Atenção",
                 color: "orange",
@@ -513,7 +531,7 @@ if (addPlant) {
 }
 
 // ======================================================
-// TOGGLES
+// TOGGLES & CONFIGURAÇÕES
 // ======================================================
 document.querySelectorAll(".toggle").forEach(t => {
     t.onclick = () => {
@@ -531,9 +549,6 @@ document.querySelectorAll(".toggle").forEach(t => {
     };
 });
 
-// ======================================================
-// INTERVALO DO SENSOR
-// ======================================================
 const sensorInterval = document.getElementById("sensorInterval");
 if (sensorInterval) {
     sensorInterval.onclick = () => {
@@ -545,7 +560,5 @@ if (sensorInterval) {
 // INICIALIZAÇÃO
 // ======================================================
 render();
-// Busca histórico imediatamente
 fetchHistoryFromSupabase();
-// Atualiza histórico a cada 10 segundos
 setInterval(fetchHistoryFromSupabase, 10000);
