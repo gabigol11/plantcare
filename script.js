@@ -1,172 +1,206 @@
+// ======================================================
+// PLANTAS
+// ======================================================
 
 const plants = [
-    {
-        id: 1,
-        name: "Jiboia",
-        icon: "🌿",
-        humidity: 60,
-        status: "Ideal",
-        color: "green",
-        time: "2 horas atrás"
-    },
-    {
-        id: 2,
-        name: "Samambaia",
-        icon: "🌿",
-        humidity: 70,
-        status: "Ideal",
-        color: "green",
-        time: "há 5 min"
-    },
-    {
-        id: 3,
-        name: "Suculenta",
-        icon: "🪴",
-        humidity: 45,
-        status: "Atenção",
-        color: "orange",
-        time: "há 8 min"
-    },
-    {
-        id: 4,
-        name: "Cacto",
-        icon: "🌵",
-        humidity: 30,
-        status: "Precisa de água",
-        color: "red",
-        time: "há 3 min"
-    }
+{
+id: 1,
+name: "Jiboia",
+icon: "🌿",
+humidity: 60,
+status: "Ideal",
+color: "green",
+time: "2 horas atrás"
+},
+{
+id: 2,
+name: "Samambaia",
+icon: "🌿",
+humidity: 70,
+status: "Ideal",
+color: "green",
+time: "há 5 min"
+},
+{
+id: 3,
+name: "Suculenta",
+icon: "🪴",
+humidity: 45,
+status: "Atenção",
+color: "orange",
+time: "há 8 min"
+},
+{
+id: 4,
+name: "Cacto",
+icon: "🌵",
+humidity: 30,
+status: "Precisa de água",
+color: "red",
+time: "há 3 min"
+}
 ];
 
-// Histórico
+// ======================================================
+// HISTÓRICO
+// ======================================================
+
 let history = [];
 
 let activePage = "home";
 let toastTimer;
 
 // ======================================================
-// CONFIGURAÇÃO DO SUPABASE
+// SUPABASE
 // ======================================================
 
-const supabaseUrl = "https://lbwhdmbsudonlquchtow.supabase.co";
-const supabaseKey = "sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
+const supabaseUrl =
+"https://lbwhdmbsudonlquchtow.supabase.co";
+
+const supabaseKey =
+"sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
 
 // ======================================================
-// CONVERTE HORÁRIO DO SUPABASE PARA HORÁRIO DE SÃO PAULO
+// CONVERTE DATA/HORA PARA SÃO PAULO
 // ======================================================
 
 function formatarDataBrasil(isoString) {
 
-    if (!isoString) {
-        return "Sem data";
-    }
+if (!isoString) {
+    return "Sem data";
+}
 
-    const data = new Date(isoString);
+const data = new Date(isoString);
 
-    return data.toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+if (isNaN(data.getTime())) {
+    return "Data inválida";
+}
+
+return data.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+});
+
 }
 
 // ======================================================
-// BUSCA O HISTÓRICO NO SUPABASE
+// BUSCAR HISTÓRICO DO SUPABASE
 // ======================================================
 
 async function fetchHistoryFromSupabase() {
 
-    try {
+try {
 
-        const resposta = await fetch(
-            `${supabaseUrl}/rest/v1/comandos?select=*&order=horários.desc&limit=5`,
-            {
-                method: "GET",
+    console.log("[Supabase] Buscando histórico...");
 
-                headers: {
-                    "apikey": supabaseKey,
-                    "Authorization": `Bearer ${supabaseKey}`
-                }
-            }
-        );
+    const resposta = await fetch(
+        `${supabaseUrl}/rest/v1/comandos?select=*&order=horarios.desc`,
+        {
+            method: "GET",
 
-        if (!resposta.ok) {
-
-            console.error(
-                "Erro ao carregar histórico:",
-                resposta.status
-            );
-
-            return;
-        }
-
-        const dados = await resposta.json();
-
-        // ==================================================
-        // PEGA SOMENTE AS 5 ÚLTIMAS IRRIGAÇÕES
-        // ==================================================
-
-        history = dados
-            .filter(item =>
-                item.mensagem &&
-                item.mensagem.toUpperCase().includes("REG")
-            )
-            .slice(0, 5)
-            .map(item => ({
-
-                plant: "PlantCare ESP32",
-
-                icon: "💧",
-
-                time: formatarDataBrasil(
-                    item["horários"]
-                ),
-
-                value: item.mensagem
-            }));
-
-        // ==================================================
-        // PEGA A ÚLTIMA REGA
-        // ==================================================
-
-        if (dados.length > 0) {
-
-            const ultimaRega = dados.find(item =>
-                item.mensagem &&
-                item.mensagem.toUpperCase().includes("REG")
-            );
-
-            if (ultimaRega && ultimaRega["horários"]) {
-
-                const horarioFormatado =
-                    formatarDataBrasil(
-                        ultimaRega["horários"]
-                    );
-
-                const elemento =
-                    document.getElementById("lastWater");
-
-                if (elemento) {
-
-                    elemento.textContent =
-                        horarioFormatado;
-                }
+            headers: {
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`
             }
         }
+    );
 
-        // Atualiza o site
-        render();
+    console.log(
+        "[Supabase] HTTP:",
+        resposta.status
+    );
 
-    } catch (erro) {
+    // ==================================================
+    // ERRO HTTP
+    // ==================================================
+
+    if (!resposta.ok) {
+
+        const erroTexto =
+            await resposta.text();
 
         console.error(
-            "Erro de conexão com Supabase:",
-            erro
+            "[Supabase] Erro:",
+            erroTexto
         );
+
+        history = [];
+
+        render();
+
+        return;
     }
+
+    // ==================================================
+    // CONVERTE RESPOSTA
+    // ==================================================
+
+    const dados =
+        await resposta.json();
+
+    console.log(
+        "[Supabase] Dados recebidos:",
+        dados
+    );
+
+    // ==================================================
+    // SE NÃO EXISTIR REGISTRO
+    // ==================================================
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+
+        history = [];
+
+        render();
+
+        return;
+    }
+
+    // ==================================================
+    // MONTA HISTÓRICO
+    // ==================================================
+
+   // ==================================================
+    // MONTA HISTÓRICO (Traz tudo sem travar)
+    // ==================================================
+
+    history = dados.map(item => {
+        // Tenta pegar o campo da data (com ou sem acento / created_at)
+        const dataBruta = item["horarios"] || item["horarios"] || item["created_at"];
+        
+        // Pega a mensagem do ESP32 ou coloca um padrão
+        const textoMensagem = item.mensagem || item.comando || "Comando registrado";
+
+        return {
+            plant: "PlantCare",
+            icon: "💧",
+            time: formatarDataBrasil(dataBruta),
+            value: textoMensagem
+        };
+    });
+    // ==================================================
+    // ATUALIZA SITE
+    // ==================================================
+
+    render();
+
+} catch (erro) {
+
+    console.error(
+        "[Supabase] Erro de conexão:",
+        erro
+    );
+
+    history = [];
+
+    render();
+}
+
 }
 
 // ======================================================
@@ -175,19 +209,24 @@ async function fetchHistoryFromSupabase() {
 
 function toast(msg) {
 
-    const el =
-        document.getElementById("toast");
+const el =
+    document.getElementById("toast");
 
-    el.textContent = msg;
+if (!el) {
+    return;
+}
 
-    el.classList.add("show");
+el.textContent = msg;
 
-    clearTimeout(toastTimer);
+el.classList.add("show");
 
-    toastTimer = setTimeout(
-        () => el.classList.remove("show"),
-        2500
-    );
+clearTimeout(toastTimer);
+
+toastTimer = setTimeout(
+    () => el.classList.remove("show"),
+    2500
+);
+
 }
 
 // ======================================================
@@ -196,63 +235,57 @@ function toast(msg) {
 
 function card(p) {
 
-    let statusClass =
-        p.color === "green"
-            ? "ok"
-            : p.color === "orange"
-            ? "warn"
-            : "crit";
+let statusClass =
+    p.color === "green"
+        ? "ok"
+        : p.color === "orange"
+        ? "warn"
+        : "crit";
 
-    return `
-    <article class="card" onclick="selectPlant(${p.id})">
+return `
+<article class="card" onclick="selectPlant(${p.id})">
 
-        <div class="cardtop">
+    <div class="cardtop">
 
-            <div class="thumb">
-                ${p.icon}
-            </div>
-
-            <div>
-
-                <strong>
-                    ${p.name}
-                </strong>
-
-                <p>
-                    Sensor conectado
-                </p>
-
-            </div>
-
+        <div class="thumb">
+            ${p.icon}
         </div>
 
-        <div class="percent">
-            ${p.humidity}%
+        <div>
+            <strong>${p.name}</strong>
+            <p>Sensor conectado</p>
         </div>
 
-        <div class="bar">
+    </div>
 
-            <span
-                class="${p.color}"
-                style="width:${p.humidity}%">
-            </span>
+    <div class="percent">
+        ${p.humidity}%
+    </div>
 
-        </div>
+    <div class="bar">
 
-        <div class="bottom">
+        <span
+            class="${p.color}"
+            style="width:${p.humidity}%">
+        </span>
 
-            <span class="${statusClass}">
-                ● ${p.status}
-            </span>
+    </div>
 
-            <span>
-                ${p.time}
-            </span>
+    <div class="bottom">
 
-        </div>
+        <span class="${statusClass}">
+            ● ${p.status}
+        </span>
 
-    </article>
-    `;
+        <span>
+            ${p.time}
+        </span>
+
+    </div>
+
+</article>
+`;
+
 }
 
 // ======================================================
@@ -261,119 +294,166 @@ function card(p) {
 
 function render() {
 
-    document.getElementById("homePlants").innerHTML =
+// ==================================================
+// PLANTAS HOME
+// ==================================================
+
+const homePlants =
+    document.getElementById("homePlants");
+
+if (homePlants) {
+
+    homePlants.innerHTML =
         plants
             .slice(0, 3)
             .map(card)
             .join("");
+}
 
+// ==================================================
+// LISTA DE PLANTAS
+// ==================================================
 
-    document.getElementById("plantsList").innerHTML =
+const plantsList =
+    document.getElementById("plantsList");
+
+if (plantsList) {
+
+    plantsList.innerHTML =
         plants
             .map(p => `
-                <div class="plant-item">
 
-                    <div class="rowleft">
+            <div class="plant-item">
 
-                        <div class="thumb">
-                            ${p.icon}
-                        </div>
+                <div class="rowleft">
 
-                        <div>
+                    <div class="thumb">
+                        ${p.icon}
+                    </div>
 
-                            <strong>
-                                ${p.name}
-                            </strong>
+                    <div>
 
-                            <p class="muted">
-                                ${p.humidity}% de umidade · ${p.status}
-                            </p>
+                        <strong>
+                            ${p.name}
+                        </strong>
 
-                        </div>
+                        <p class="muted">
+                            ${p.humidity}% de umidade ·
+                            ${p.status}
+                        </p>
 
                     </div>
 
-                    <button
-                        onclick="selectPlant(${p.id})">
-                        Detalhes
-                    </button>
+                </div>
+
+                <button
+                    onclick="selectPlant(${p.id})">
+                    Detalhes
+                </button>
+
+            </div>
+
+            `)
+            .join("");
+}
+
+// ==================================================
+// HISTÓRICO
+// ==================================================
+
+let hist;
+
+if (history.length > 0) {
+
+    hist =
+        history
+            .map(h => `
+
+            <div class="row">
+
+                <div class="rowleft">
+
+                    <div class="ico">
+                        ${h.icon}
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            ${h.plant}
+                        </strong>
+
+                        <br>
+
+                        <small class="muted">
+                            ${h.time}
+                        </small>
+
+                    </div>
 
                 </div>
+
+                <span class="value">
+                    ${h.value}
+                </span>
+
+            </div>
+
             `)
             .join("");
 
+} else {
 
-    // ==================================================
-    // HISTÓRICO
-    // ==================================================
+    hist = `
+        <p
+            class="muted"
+            style="padding:10px;">
+            Nenhum registro de irrigação encontrado.
+        </p>
+    `;
+}
 
-    const hist =
-        history.length > 0
+// ==================================================
+// COLOCA HISTÓRICO NAS DUAS ÁREAS
+// ==================================================
 
-            ? history
-                .slice(0, 5)
-                .map(h => `
-                    <div class="row">
+const homeHistory =
+    document.getElementById("homeHistory");
 
-                        <div class="rowleft">
+if (homeHistory) {
+    homeHistory.innerHTML = hist;
+}
 
-                            <div class="ico">
-                                ${h.icon}
-                            </div>
+const fullHistory =
+    document.getElementById("fullHistory");
 
-                            <div>
+if (fullHistory) {
+    fullHistory.innerHTML = hist;
+}
 
-                                <strong>
-                                    ${h.plant}
-                                </strong>
+// ==================================================
+// SELECT DE PLANTAS
+// ==================================================
 
-                                <br>
+const plantSelect =
+    document.getElementById("plantSelect");
 
-                                <small class="muted">
-                                    ${h.time}
-                                </small>
+if (plantSelect) {
 
-                            </div>
-
-                        </div>
-
-                        <span class="value">
-                            ${h.value}
-                        </span>
-
-                    </div>
-                `)
-                .join("")
-
-            : `
-                <p
-                    class="muted"
-                    style="padding: 10px;">
-                    Carregando histórico do Supabase...
-                </p>
-            `;
-
-
-    document.getElementById("homeHistory").innerHTML =
-        hist;
-
-    document.getElementById("fullHistory").innerHTML =
-        hist;
-
-
-    // ==================================================
-    // SELECT DE PLANTAS
-    // ==================================================
-
-    document.getElementById("plantSelect").innerHTML =
+    plantSelect.innerHTML =
         plants
             .map(p =>
                 `<option>${p.name}</option>`
             )
             .join("");
+}
 
+// ==================================================
+// ATUALIZA PLANTA PRINCIPAL
+// ==================================================
 
-    updateMain();
+updateMain();
+
 }
 
 // ======================================================
@@ -382,35 +462,43 @@ function render() {
 
 function updateMain() {
 
-    const p = plants[0];
+const p = plants[0];
 
-    const pct =
-        p.humidity;
+const pct = p.humidity;
 
-    document.getElementById(
-        "mainHumidity"
-    ).textContent =
+const mainHumidity =
+    document.getElementById("mainHumidity");
+
+if (mainHumidity) {
+    mainHumidity.textContent =
         pct + "%";
+}
 
+const mainRing =
+    document.getElementById("mainRing");
 
-    document.getElementById(
-        "mainRing"
-    ).style.background =
+if (mainRing) {
+
+    mainRing.style.background =
         `conic-gradient(
             var(--g) 0 ${pct}%,
             #d5dfd0 ${pct}% 100%
         )`;
+}
 
+const mainStatus =
+    document.getElementById("mainStatus");
 
-    document.getElementById(
-        "mainStatus"
-    ).textContent =
+if (mainStatus) {
 
+    mainStatus.textContent =
         pct < 40
             ? "Sua planta precisa de água."
             : pct < 50
             ? "A umidade está ficando baixa."
             : "Sua planta está em boas condições.";
+}
+
 }
 
 // ======================================================
@@ -419,52 +507,47 @@ function updateMain() {
 
 function navigate(page) {
 
-    activePage = page;
+activePage = page;
 
-    document
-        .querySelectorAll(".page")
-        .forEach(x =>
-            x.classList.toggle(
-                "active",
-                x.id === page
-            )
-        );
+document
+    .querySelectorAll(".page")
+    .forEach(x =>
+        x.classList.toggle(
+            "active",
+            x.id === page
+        )
+    );
 
+document
+    .querySelectorAll("[data-page]")
+    .forEach(x =>
+        x.classList.toggle(
+            "active",
+            x.dataset.page === page
+        )
+    );
 
-    document
-        .querySelectorAll("[data-page]")
-        .forEach(x =>
-            x.classList.toggle(
-                "active",
-                x.dataset.page === page
-            )
-        );
+window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+});
 
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
 }
 
-
 // ======================================================
-// CLIQUE DE NAVEGAÇÃO
+// CLIQUE NAVEGAÇÃO
 // ======================================================
 
-document.addEventListener(
-    "click",
-    e => {
+document.addEventListener("click", e => {
 
-        const b =
-            e.target.closest("[data-page]");
+const b =
+    e.target.closest("[data-page]");
 
-        if (b) {
-            navigate(b.dataset.page);
-        }
-    }
-);
+if (b) {
+    navigate(b.dataset.page);
+}
 
+});
 
 // ======================================================
 // SELECIONAR PLANTA
@@ -472,22 +555,28 @@ document.addEventListener(
 
 function selectPlant(id) {
 
-    const p =
-        plants.find(x => x.id === id);
+const p =
+    plants.find(x => x.id === id);
 
-    plants[0] = {
-        ...p
-    };
-
-    updateMain();
-
-    navigate("home");
-
-    toast(
-        "🌱 " + p.name + " selecionada"
-    );
+if (!p) {
+    return;
 }
 
+plants[0] = {
+    ...p
+};
+
+updateMain();
+
+navigate("home");
+
+toast(
+    "🌱 " +
+    p.name +
+    " selecionada"
+);
+
+}
 
 // ======================================================
 // REGAR AGORA
@@ -495,127 +584,153 @@ function selectPlant(id) {
 
 async function waterNow() {
 
-    try {
+try {
 
-        const resposta =
-            await fetch(
-                `${supabaseUrl}/rest/v1/comandos`,
-                {
-                    method: "POST",
+    console.log(
+        "[Supabase] Enviando REGAR..."
+    );
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
+    const resposta =
+        await fetch(
+            `${supabaseUrl}/rest/v1/comandos`,
+            {
+                method: "POST",
 
-                        "apikey":
-                            supabaseKey,
+                headers: {
+                    "Content-Type":
+                        "application/json",
 
-                        "Authorization":
-                            `Bearer ${supabaseKey}`,
+                    "apikey":
+                        supabaseKey,
 
-                        "Prefer":
-                            "return=minimal"
-                    },
+                    "Authorization":
+                        `Bearer ${supabaseKey}`,
 
-                    body:
-                        JSON.stringify({
-                            mensagem: "REGAR"
-                        })
-                }
-            );
+                    "Prefer":
+                        "return=minimal"
+                },
 
+                body: JSON.stringify({
+                    mensagem: "REGAR"
+                })
+            }
+        );
 
-        if (resposta.ok) {
+    console.log(
+        "[Supabase] HTTP:",
+        resposta.status
+    );
 
-            toast(
-                "💧 Comando de rega enviado!"
-            );
+    if (resposta.ok) {
 
+        toast(
+            "💧 Comando de rega enviado!"
+        );
 
-            // Atualiza o histórico
-            // depois que o ESP32 processar
-            setTimeout(
-                fetchHistoryFromSupabase,
-                2000
-            );
+        // Aguarda um pouco para o ESP32
+        // processar o comando
 
-        } else {
+        setTimeout(
+            fetchHistoryFromSupabase,
+            2000
+        );
 
-            console.log(
-                "Erro Supabase:",
-                resposta.status,
-                await resposta.text()
-            );
+    } else {
 
-            toast(
-                "❌ Erro ao enviar comando."
-            );
-        }
+        const erro =
+            await resposta.text();
 
-    } catch (erro) {
-
-        console.log(
-            "Erro:",
+        console.error(
+            "[Supabase] Erro:",
             erro
         );
 
         toast(
-            "❌ Não foi possível conectar ao servidor."
+            "❌ Erro ao enviar comando."
         );
     }
+
+} catch (erro) {
+
+    console.error(
+        "[Supabase] Erro:",
+        erro
+    );
+
+    toast(
+        "❌ Não foi possível conectar ao Supabase."
+    );
 }
 
+}
 
 // ======================================================
 // BOTÃO REGAR
 // ======================================================
 
-document.getElementById(
-    "waterBtn"
-).onclick =
+const waterBtn =
+document.getElementById("waterBtn");
+
+if (waterBtn) {
+
+waterBtn.onclick =
     waterNow;
 
+}
 
 // ======================================================
-// BOTÃO CONFIGURAR HORÁRIO
+// CONFIGURAR HORÁRIO
 // ======================================================
 
-document.getElementById(
-    "scheduleBtn"
-).onclick = () => {
+const scheduleBtn =
+document.getElementById("scheduleBtn");
 
-    document.getElementById(
-        "modalTitle"
-    ).textContent =
+if (scheduleBtn) {
+
+scheduleBtn.onclick = () => {
+
+    document
+        .getElementById("modalTitle")
+        .textContent =
         "Configurar irrigação";
 
-    document.getElementById(
-        "modalBg"
-    ).classList.add("show");
+    document
+        .getElementById("modalBg")
+        .classList
+        .add("show");
 };
 
+}
 
 // ======================================================
 // FECHAR MODAL
 // ======================================================
 
-document.getElementById(
-    "closeModal"
-).onclick = () => {
+const closeModal =
+document.getElementById("closeModal");
 
-    document.getElementById(
-        "modalBg"
-    ).classList.remove("show");
+if (closeModal) {
+
+closeModal.onclick = () => {
+
+    document
+        .getElementById("modalBg")
+        .classList
+        .remove("show");
 };
 
+}
 
 // ======================================================
 // SALVAR MODAL
 // ======================================================
 
-document.getElementById(
-    "saveModal"
-).onclick = () => {
+const saveModal =
+document.getElementById("saveModal");
+
+if (saveModal) {
+
+saveModal.onclick = () => {
 
     const time =
         document.getElementById(
@@ -627,42 +742,46 @@ document.getElementById(
             "minHumidity"
         ).value;
 
-
-    document.getElementById(
-        "modalBg"
-    ).classList.remove("show");
-
+    document
+        .getElementById("modalBg")
+        .classList
+        .remove("show");
 
     toast(
         "🗓️ Agendado para " +
         time +
         " quando chegar a " +
         min +
-        " de umidade."
+        "% de umidade."
     );
 };
 
+}
 
 // ======================================================
 // ADICIONAR PLANTA
 // ======================================================
 
-document.getElementById(
-    "addPlant"
-).onclick = () => {
+const addPlant =
+document.getElementById("addPlant");
+
+if (addPlant) {
+
+addPlant.onclick = () => {
 
     const name =
         prompt(
             "Nome da nova planta:"
         );
 
-
-    if (name && name.trim()) {
+    if (
+        name &&
+        name.trim()
+    ) {
 
         plants.push({
 
-            id:
-                Date.now(),
+            id: Date.now(),
 
             name:
                 name.trim(),
@@ -683,9 +802,7 @@ document.getElementById(
                 "agora"
         });
 
-
         render();
-
 
         toast(
             "🌱 " +
@@ -695,53 +812,58 @@ document.getElementById(
     }
 };
 
+}
 
 // ======================================================
 // TOGGLES
 // ======================================================
 
 document
-    .querySelectorAll(".toggle")
-    .forEach(t =>
+.querySelectorAll(".toggle")
+.forEach(t => {
 
-        t.onclick = () => {
+    t.onclick = () => {
 
-            t.classList.toggle("on");
+        t.classList.toggle("on");
 
+        toast(
 
-            toast(
+            t.dataset.toggle === "auto"
 
-                t.dataset.toggle === "auto"
+                ? (
+                    t.classList.contains("on")
+                        ? "🤖 Irrigação automática ativada"
+                        : "Irrigação automática desativada"
+                )
 
-                    ? (
-                        t.classList.contains("on")
-                            ? "🤖 Irrigação automática ativada"
-                            : "Irrigação automática desativada"
-                      )
-
-                    : (
-                        t.classList.contains("on")
-                            ? "🔔 Notificações ativadas"
-                            : "🔕 Notificações desativadas"
-                      )
-            );
-        }
-    );
-
+                : (
+                    t.classList.contains("on")
+                        ? "🔔 Notificações ativadas"
+                        : "🔕 Notificações desativadas"
+                )
+        );
+    };
+});
 
 // ======================================================
 // INTERVALO DO SENSOR
 // ======================================================
 
+const sensorInterval =
 document.getElementById(
-    "sensorInterval"
-).onclick = () => {
+"sensorInterval"
+);
+
+if (sensorInterval) {
+
+sensorInterval.onclick = () => {
 
     toast(
         "⏱️ Intervalos disponíveis: 1, 5, 10 ou 15 minutos."
     );
 };
 
+}
 
 // ======================================================
 // INICIALIZAÇÃO
@@ -749,14 +871,11 @@ document.getElementById(
 
 render();
 
+// Busca histórico imediatamente
 fetchHistoryFromSupabase();
 
-
-// ======================================================
-// ATUALIZA HISTÓRICO AUTOMATICAMENTE
-// ======================================================
-
+// Atualiza histórico a cada 10 segundos
 setInterval(
-    fetchHistoryFromSupabase,
-    10000
+fetchHistoryFromSupabase,
+10000
 );
