@@ -184,88 +184,24 @@ main{
     box-shadow:0 14px 40px #2d4b2d1a
 }
 
+/* ESTILIZAÇÃO DA IMAGEM PRINCIPAL */
 .plant-preview{
     min-height:320px;
     border-radius:21px;
     background:linear-gradient(150deg,#dcead5,#bcd1b0);
-    display:grid;
-    place-items:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     position:relative;
-    overflow:hidden
+    overflow:hidden;
+    padding:15px;
 }
 
-.plant{
-    position:relative;
-    width:210px;
-    height:260px
-}
-
-.stem{
-    position:absolute;
-    width:6px;
-    height:160px;
-    background:#477b3d;
-    left:103px;
-    bottom:63px;
-    border-radius:10px
-}
-
-.leaf{
-    position:absolute;
-    width:80px;
-    height:46px;
-    background:#4d9b4c;
-    border-radius:100% 0 100% 0
-}
-
-.l1{
-    left:39px;
-    bottom:158px;
-    transform:rotate(-24deg)
-}
-
-.l2{
-    left:95px;
-    bottom:183px;
-    transform:rotate(19deg) scale(.9)
-}
-
-.l3{
-    left:105px;
-    bottom:124px;
-    transform:rotate(-8deg) scale(1.05)
-}
-
-.l4{
-    left:28px;
-    bottom:105px;
-    transform:rotate(-45deg) scale(.8)
-}
-
-.l5{
-    left:112px;
-    bottom:82px;
-    transform:rotate(35deg) scale(.78)
-}
-
-.pot{
-    position:absolute;
-    bottom:5px;
-    left:51px;
-    width:112px;
-    height:86px;
-    background:#d8c7aa;
-    border-radius:7px 7px 28px 28px
-}
-
-.soil{
-    position:absolute;
-    bottom:76px;
-    left:56px;
-    width:102px;
-    height:22px;
-    border-radius:50%;
-    background:#5d4732
+.plant-preview img {
+    max-width:100%;
+    max-height:270px;
+    object-fit:contain;
+    filter:drop-shadow(0 10px 15px rgba(0,0,0,0.12));
 }
 
 .hero-content{
@@ -736,7 +672,11 @@ main{
     }
 
     .plant-preview{
-        min-height:240px
+        min-height:220px
+    }
+
+    .plant-preview img{
+        max-height:190px
     }
 
     .hero-content{
