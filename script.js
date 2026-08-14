@@ -1,4 +1,4 @@
-```javascript
+
 const plants = [
     {
         id: 1,
@@ -760,4 +760,3 @@ setInterval(
     fetchHistoryFromSupabase,
     10000
 );
-```
