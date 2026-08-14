@@ -1,41 +1,46 @@
-```javascript
+
+
+// ======================================================
+// PLANTAS
+// ======================================================
+
 const plants = [
-    {
-        id: 1,
-        name: "Jiboia",
-        icon: "🌿",
-        humidity: 60,
-        status: "Ideal",
-        color: "green",
-        time: "Sem registro"
-    },
-    {
-        id: 2,
-        name: "Samambaia",
-        icon: "🌿",
-        humidity: 70,
-        status: "Ideal",
-        color: "green",
-        time: "Sem registro"
-    },
-    {
-        id: 3,
-        name: "Suculenta",
-        icon: "🪴",
-        humidity: 45,
-        status: "Atenção",
-        color: "orange",
-        time: "Sem registro"
-    },
-    {
-        id: 4,
-        name: "Cacto",
-        icon: "🌵",
-        humidity: 30,
-        status: "Precisa de água",
-        color: "red",
-        time: "Sem registro"
-    }
+{
+id: 1,
+name: "Jiboia",
+icon: "🌿",
+humidity: 60,
+status: "Ideal",
+color: "green",
+time: "2 horas atrás"
+},
+{
+id: 2,
+name: "Samambaia",
+icon: "🌿",
+humidity: 70,
+status: "Ideal",
+color: "green",
+time: "há 5 min"
+},
+{
+id: 3,
+name: "Suculenta",
+icon: "🪴",
+humidity: 45,
+status: "Atenção",
+color: "orange",
+time: "há 8 min"
+},
+{
+id: 4,
+name: "Cacto",
+icon: "🌵",
+humidity: 30,
+status: "Precisa de água",
+color: "red",
+time: "há 3 min"
+}
 ];
 
 // ======================================================
@@ -48,133 +53,156 @@ let activePage = "home";
 let toastTimer;
 
 // ======================================================
-// CONFIGURAÇÃO DO SUPABASE
+// SUPABASE
 // ======================================================
 
 const supabaseUrl =
-    "https://lbwhdmbsudonlquchtow.supabase.co";
+"https://lbwhdmbsudonlquchtow.supabase.co";
 
 const supabaseKey =
-    "sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
+"sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
 
 // ======================================================
-// CONVERTE HORÁRIO DO SUPABASE PARA SÃO PAULO
+// CONVERTE DATA/HORA PARA SÃO PAULO
 // ======================================================
 
 function formatarDataBrasil(isoString) {
 
-    if (!isoString) {
-        return "Sem data";
-    }
+if (!isoString) {
+    return "Sem data";
+}
 
-    const data = new Date(isoString);
+const data = new Date(isoString);
 
-    if (isNaN(data.getTime())) {
-        return "Data inválida";
-    }
+if (isNaN(data.getTime())) {
+    return "Data inválida";
+}
 
-    return data.toLocaleString("pt-BR", {
-        timeZone: "America/Sao_Paulo",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-    });
+return data.toLocaleString("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+});
+
 }
 
 // ======================================================
-// BUSCA O HISTÓRICO NO SUPABASE
+// BUSCAR HISTÓRICO DO SUPABASE
 // ======================================================
 
 async function fetchHistoryFromSupabase() {
 
-    try {
+try {
 
-        const resposta = await fetch(
-            `${supabaseUrl}/rest/v1/comandos?select=*&order=horários.desc&limit=5`,
-            {
-                method: "GET",
+    console.log("[Supabase] Buscando histórico...");
 
-                headers: {
-                    "apikey": supabaseKey,
-                    "Authorization": `Bearer ${supabaseKey}`
-                }
+    const resposta = await fetch(
+        `${supabaseUrl}/rest/v1/comandos?select=*&order=horarios.desc`,
+        {
+            method: "GET",
+
+            headers: {
+                "apikey": supabaseKey,
+                "Authorization": `Bearer ${supabaseKey}`
             }
+        }
+    );
+
+    console.log(
+        "[Supabase] HTTP:",
+        resposta.status
+    );
+
+    // ==================================================
+    // ERRO HTTP
+    // ==================================================
+
+    if (!resposta.ok) {
+
+        const erroTexto =
+            await resposta.text();
+
+        console.error(
+            "[Supabase] Erro:",
+            erroTexto
         );
 
-        if (!resposta.ok) {
-
-            console.error(
-                "Erro ao carregar histórico:",
-                resposta.status,
-                await resposta.text()
-            );
-
-            return;
-        }
-
-        const dados = await resposta.json();
-
-        console.log("Dados recebidos do Supabase:", dados);
-
-        // ==================================================
-        // PEGA SOMENTE AS 5 ÚLTIMAS IRRIGAÇÕES
-        // ==================================================
-
-        const irrigacoes = dados.filter(item =>
-            item.mensagem &&
-            (
-                item.mensagem.toUpperCase().includes("REGAR") ||
-                item.mensagem.toUpperCase().includes("REGADO")
-            )
-        );
-
-        // ==================================================
-        // MONTA O HISTÓRICO DO SITE
-        // ==================================================
-
-        history = irrigacoes.slice(0, 5).map(item => ({
-
-            plant: "Jiboia",
-
-            icon: "💧",
-
-            time: formatarDataBrasil(item["horários"]),
-
-            value: item.mensagem
-
-        }));
-
-        // ==================================================
-        // ATUALIZA A ÚLTIMA IRRIGAÇÃO DA JIBOIA
-        // ==================================================
-
-        if (irrigacoes.length > 0) {
-
-            const ultima = irrigacoes[0];
-
-            plants[0].time =
-                formatarDataBrasil(ultima["horários"]);
-
-        } else {
-
-            plants[0].time = "Sem registro";
-        }
-
-        // ==================================================
-        // ATUALIZA A INTERFACE
-        // ==================================================
+        history = [];
 
         render();
 
-    } catch (erro) {
-
-        console.error(
-            "Erro de conexão com o Supabase:",
-            erro
-        );
+        return;
     }
+
+    // ==================================================
+    // CONVERTE RESPOSTA
+    // ==================================================
+
+    const dados =
+        await resposta.json();
+
+    console.log(
+        "[Supabase] Dados recebidos:",
+        dados
+    );
+
+    // ==================================================
+    // SE NÃO EXISTIR REGISTRO
+    // ==================================================
+
+    if (!Array.isArray(dados) || dados.length === 0) {
+
+        history = [];
+
+        render();
+
+        return;
+    }
+
+    // ==================================================
+    // MONTA HISTÓRICO
+    // ==================================================
+
+   // ==================================================
+    // MONTA HISTÓRICO (Traz tudo sem travar)
+    // ==================================================
+
+    history = dados.map(item => {
+        // Tenta pegar o campo da data (com ou sem acento / created_at)
+        const dataBruta = item["horarios"] || item["horarios"] || item["created_at"];
+        
+        // Pega a mensagem do ESP32 ou coloca um padrão
+        const textoMensagem = item.mensagem || item.comando || "Comando registrado";
+
+        return {
+            plant: "PlantCare",
+            icon: "💧",
+            time: formatarDataBrasil(dataBruta),
+            value: textoMensagem
+        };
+    });
+    // ==================================================
+    // ATUALIZA SITE
+    // ==================================================
+
+    render();
+
+} catch (erro) {
+
+    console.error(
+        "[Supabase] Erro de conexão:",
+        erro
+    );
+
+    history = [];
+
+    render();
+}
+
 }
 
 // ======================================================
@@ -183,21 +211,24 @@ async function fetchHistoryFromSupabase() {
 
 function toast(msg) {
 
-    const el =
-        document.getElementById("toast");
+const el =
+    document.getElementById("toast");
 
-    if (!el) return;
+if (!el) {
+    return;
+}
 
-    el.textContent = msg;
+el.textContent = msg;
 
-    el.classList.add("show");
+el.classList.add("show");
 
-    clearTimeout(toastTimer);
+clearTimeout(toastTimer);
 
-    toastTimer = setTimeout(
-        () => el.classList.remove("show"),
-        2500
-    );
+toastTimer = setTimeout(
+    () => el.classList.remove("show"),
+    2500
+);
+
 }
 
 // ======================================================
@@ -206,259 +237,270 @@ function toast(msg) {
 
 function card(p) {
 
-    let statusClass =
-        p.color === "green"
-            ? "ok"
-            : p.color === "orange"
-            ? "warn"
-            : "crit";
+let statusClass =
+    p.color === "green"
+        ? "ok"
+        : p.color === "orange"
+        ? "warn"
+        : "crit";
 
-    return `
-    <article class="card" onclick="selectPlant(${p.id})">
+return `
+<article class="card" onclick="selectPlant(${p.id})">
 
-        <div class="cardtop">
+    <div class="cardtop">
 
-            <div class="thumb">
-                ${p.icon}
-            </div>
-
-            <div>
-
-                <strong>
-                    ${p.name}
-                </strong>
-
-                <p>
-                    Sensor conectado
-                </p>
-
-            </div>
-
+        <div class="thumb">
+            ${p.icon}
         </div>
 
-        <div class="percent">
-            ${p.humidity}%
+        <div>
+            <strong>${p.name}</strong>
+            <p>Sensor conectado</p>
         </div>
 
-        <div class="bar">
+    </div>
 
-            <span
-                class="${p.color}"
-                style="width:${p.humidity}%">
-            </span>
+    <div class="percent">
+        ${p.humidity}%
+    </div>
 
-        </div>
+    <div class="bar">
 
-        <div class="bottom">
+        <span
+            class="${p.color}"
+            style="width:${p.humidity}%">
+        </span>
 
-            <span class="${statusClass}">
-                ● ${p.status}
-            </span>
+    </div>
 
-            <span>
-                ${p.time}
-            </span>
+    <div class="bottom">
 
-        </div>
+        <span class="${statusClass}">
+            ● ${p.status}
+        </span>
 
-    </article>
-    `;
+        <span>
+            ${p.time}
+        </span>
+
+    </div>
+
+</article>
+`;
+
 }
 
 // ======================================================
-// RENDERIZA A INTERFACE
+// RENDER
 // ======================================================
 
 function render() {
 
-    // ==================================================
-    // PLANTAS NA HOME
-    // ==================================================
+// ==================================================
+// PLANTAS HOME
+// ==================================================
 
-    document.getElementById("homePlants").innerHTML =
+const homePlants =
+    document.getElementById("homePlants");
+
+if (homePlants) {
+
+    homePlants.innerHTML =
         plants
             .slice(0, 3)
             .map(card)
             .join("");
+}
 
-    // ==================================================
-    // LISTA DE PLANTAS
-    // ==================================================
+// ==================================================
+// LISTA DE PLANTAS
+// ==================================================
 
-    document.getElementById("plantsList").innerHTML =
-        plants.map(p => `
+const plantsList =
+    document.getElementById("plantsList");
 
-        <div class="plant-item">
+if (plantsList) {
 
-            <div class="rowleft">
+    plantsList.innerHTML =
+        plants
+            .map(p => `
 
-                <div class="thumb">
-                    ${p.icon}
-                </div>
+            <div class="plant-item">
 
-                <div>
+                <div class="rowleft">
 
-                    <strong>
-                        ${p.name}
-                    </strong>
+                    <div class="thumb">
+                        ${p.icon}
+                    </div>
 
-                    <p class="muted">
-                        ${p.humidity}% de umidade · ${p.status}
-                    </p>
+                    <div>
 
-                </div>
+                        <strong>
+                            ${p.name}
+                        </strong>
 
-            </div>
-
-            <button
-                onclick="selectPlant(${p.id})">
-                Detalhes
-            </button>
-
-        </div>
-
-        `).join("");
-
-    // ==================================================
-    // HISTÓRICO
-    // ==================================================
-
-    const hist =
-        history.length > 0
-
-            ? history.map(h => `
-
-                <div class="row">
-
-                    <div class="rowleft">
-
-                        <div class="ico">
-                            ${h.icon}
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                ${h.plant}
-                            </strong>
-
-                            <br>
-
-                            <small class="muted">
-                                ${h.time}
-                            </small>
-
-                        </div>
+                        <p class="muted">
+                            ${p.humidity}% de umidade ·
+                            ${p.status}
+                        </p>
 
                     </div>
 
-                    <span class="value">
-                        ${h.value}
-                    </span>
+                </div>
+
+                <button
+                    onclick="selectPlant(${p.id})">
+                    Detalhes
+                </button>
+
+            </div>
+
+            `)
+            .join("");
+}
+
+// ==================================================
+// HISTÓRICO
+// ==================================================
+
+let hist;
+
+if (history.length > 0) {
+
+    hist =
+        history
+            .map(h => `
+
+            <div class="row">
+
+                <div class="rowleft">
+
+                    <div class="ico">
+                        ${h.icon}
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            ${h.plant}
+                        </strong>
+
+                        <br>
+
+                        <small class="muted">
+                            ${h.time}
+                        </small>
+
+                    </div>
 
                 </div>
 
-              `).join("")
+                <span class="value">
+                    ${h.value}
+                </span>
 
-            : `
-                <p
-                    class="muted"
-                    style="padding: 10px;">
-                    Carregando histórico do Supabase...
-                </p>
-              `;
+            </div>
 
-    // ==================================================
-    // HISTÓRICO DA HOME
-    // ==================================================
+            `)
+            .join("");
 
-    document.getElementById(
-        "homeHistory"
-    ).innerHTML = hist;
+} else {
 
-    // ==================================================
-    // HISTÓRICO COMPLETO
-    // ==================================================
+    hist = `
+        <p
+            class="muted"
+            style="padding:10px;">
+            Nenhum registro de irrigação encontrado.
+        </p>
+    `;
+}
 
-    document.getElementById(
-        "fullHistory"
-    ).innerHTML = hist;
+// ==================================================
+// COLOCA HISTÓRICO NAS DUAS ÁREAS
+// ==================================================
 
-    // ==================================================
-    // SELECT DE PLANTAS
-    // ==================================================
+const homeHistory =
+    document.getElementById("homeHistory");
 
-    document.getElementById(
-        "plantSelect"
-    ).innerHTML =
-        plants.map(p =>
-            `<option>${p.name}</option>`
-        ).join("");
+if (homeHistory) {
+    homeHistory.innerHTML = hist;
+}
 
-    // ==================================================
-    // ATUALIZA PLANTA PRINCIPAL
-    // ==================================================
+const fullHistory =
+    document.getElementById("fullHistory");
 
-    updateMain();
+if (fullHistory) {
+    fullHistory.innerHTML = hist;
+}
+
+// ==================================================
+// SELECT DE PLANTAS
+// ==================================================
+
+const plantSelect =
+    document.getElementById("plantSelect");
+
+if (plantSelect) {
+
+    plantSelect.innerHTML =
+        plants
+            .map(p =>
+                `<option>${p.name}</option>`
+            )
+            .join("");
+}
+
+// ==================================================
+// ATUALIZA PLANTA PRINCIPAL
+// ==================================================
+
+updateMain();
+
 }
 
 // ======================================================
-// ATUALIZA A PLANTA PRINCIPAL
+// ATUALIZA PLANTA PRINCIPAL
 // ======================================================
 
 function updateMain() {
 
-    const p = plants[0];
+const p = plants[0];
 
-    const pct = p.humidity;
+const pct = p.humidity;
 
-    // ==================================================
-    // UMIDADE
-    // ==================================================
+const mainHumidity =
+    document.getElementById("mainHumidity");
 
-    document.getElementById(
-        "mainHumidity"
-    ).textContent = pct + "%";
+if (mainHumidity) {
+    mainHumidity.textContent =
+        pct + "%";
+}
 
-    // ==================================================
-    // ANEL DE UMIDADE
-    // ==================================================
+const mainRing =
+    document.getElementById("mainRing");
 
-    document.getElementById(
-        "mainRing"
-    ).style.background =
+if (mainRing) {
+
+    mainRing.style.background =
         `conic-gradient(
             var(--g) 0 ${pct}%,
             #d5dfd0 ${pct}% 100%
         )`;
+}
 
-    // ==================================================
-    // STATUS
-    // ==================================================
+const mainStatus =
+    document.getElementById("mainStatus");
 
-    document.getElementById(
-        "mainStatus"
-    ).textContent =
+if (mainStatus) {
 
+    mainStatus.textContent =
         pct < 40
             ? "Sua planta precisa de água."
             : pct < 50
             ? "A umidade está ficando baixa."
             : "Sua planta está em boas condições.";
+}
 
-    // ==================================================
-    // ÚLTIMA IRRIGAÇÃO
-    // ==================================================
-
-    const ultimaRega =
-        document.getElementById("lastWater");
-
-    if (ultimaRega) {
-
-        ultimaRega.textContent =
-            p.time;
-
-    }
 }
 
 // ======================================================
@@ -467,44 +509,46 @@ function updateMain() {
 
 function navigate(page) {
 
-    activePage = page;
+activePage = page;
 
-    document.querySelectorAll(".page").forEach(x =>
+document
+    .querySelectorAll(".page")
+    .forEach(x =>
         x.classList.toggle(
             "active",
             x.id === page
         )
     );
 
-    document.querySelectorAll("[data-page]").forEach(x =>
+document
+    .querySelectorAll("[data-page]")
+    .forEach(x =>
         x.classList.toggle(
             "active",
             x.dataset.page === page
         )
     );
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+});
+
 }
 
 // ======================================================
-// CLIQUE NA NAVEGAÇÃO
+// CLIQUE NAVEGAÇÃO
 // ======================================================
 
 document.addEventListener("click", e => {
 
-    const b =
-        e.target.closest("[data-page]");
+const b =
+    e.target.closest("[data-page]");
 
-    if (b) {
+if (b) {
+    navigate(b.dataset.page);
+}
 
-        navigate(
-            b.dataset.page
-        );
-
-    }
 });
 
 // ======================================================
@@ -513,22 +557,27 @@ document.addEventListener("click", e => {
 
 function selectPlant(id) {
 
-    const p =
-        plants.find(x => x.id === id);
+const p =
+    plants.find(x => x.id === id);
 
-    if (!p) return;
+if (!p) {
+    return;
+}
 
-    plants[0] = {
-        ...p
-    };
+plants[0] = {
+    ...p
+};
 
-    updateMain();
+updateMain();
 
-    navigate("home");
+navigate("home");
 
-    toast(
-        "🌱 " + p.name + " selecionada"
-    );
+toast(
+    "🌱 " +
+    p.name +
+    " selecionada"
+);
+
 }
 
 // ======================================================
@@ -537,109 +586,122 @@ function selectPlant(id) {
 
 async function waterNow() {
 
-    try {
+try {
 
-        const resposta =
-            await fetch(
-                `${supabaseUrl}/rest/v1/comandos`,
-                {
-                    method: "POST",
+    console.log(
+        "[Supabase] Enviando REGAR..."
+    );
 
-                    headers: {
-                        "Content-Type":
-                            "application/json",
+    const resposta =
+        await fetch(
+            `${supabaseUrl}/rest/v1/comandos`,
+            {
+                method: "POST",
 
-                        "apikey":
-                            supabaseKey,
+                headers: {
+                    "Content-Type":
+                        "application/json",
 
-                        "Authorization":
-                            `Bearer ${supabaseKey}`,
+                    "apikey":
+                        supabaseKey,
 
-                        "Prefer":
-                            "return=minimal"
-                    },
+                    "Authorization":
+                        `Bearer ${supabaseKey}`,
 
-                    body: JSON.stringify({
-                        mensagem: "REGAR"
-                    })
-                }
-            );
+                    "Prefer":
+                        "return=minimal"
+                },
 
-        if (resposta.ok) {
+                body: JSON.stringify({
+                    mensagem: "REGAR"
+                })
+            }
+        );
 
-            toast(
-                "💧 Comando de rega enviado!"
-            );
+    console.log(
+        "[Supabase] HTTP:",
+        resposta.status
+    );
 
-            // ==================================================
-            // AGUARDA O ESP32 PROCESSAR E DEPOIS ATUALIZA
-            // ==================================================
+    if (resposta.ok) {
 
-            setTimeout(
-                fetchHistoryFromSupabase,
-                2000
-            );
+        toast(
+            "💧 Comando de rega enviado!"
+        );
 
-        } else {
+        // Aguarda um pouco para o ESP32
+        // processar o comando
 
-            console.log(
-                "Erro Supabase:",
-                resposta.status,
-                await resposta.text()
-            );
+        setTimeout(
+            fetchHistoryFromSupabase,
+            2000
+        );
 
-            toast(
-                "❌ Erro ao enviar comando."
-            );
-        }
+    } else {
 
-    } catch (erro) {
+        const erro =
+            await resposta.text();
 
-        console.log(
-            "Erro:",
+        console.error(
+            "[Supabase] Erro:",
             erro
         );
 
         toast(
-            "❌ Não foi possível conectar ao servidor."
+            "❌ Erro ao enviar comando."
         );
     }
+
+} catch (erro) {
+
+    console.error(
+        "[Supabase] Erro:",
+        erro
+    );
+
+    toast(
+        "❌ Não foi possível conectar ao Supabase."
+    );
+}
+
 }
 
 // ======================================================
-// BOTÃO REGAR AGORA
+// BOTÃO REGAR
 // ======================================================
 
-const waterButton =
-    document.getElementById("waterBtn");
+const waterBtn =
+document.getElementById("waterBtn");
 
-if (waterButton) {
+if (waterBtn) {
 
-    waterButton.onclick =
-        waterNow;
+waterBtn.onclick =
+    waterNow;
+
 }
 
 // ======================================================
 // CONFIGURAR HORÁRIO
 // ======================================================
 
-const scheduleButton =
-    document.getElementById("scheduleBtn");
+const scheduleBtn =
+document.getElementById("scheduleBtn");
 
-if (scheduleButton) {
+if (scheduleBtn) {
 
-    scheduleButton.onclick = () => {
+scheduleBtn.onclick = () => {
 
-        document.getElementById(
-            "modalTitle"
-        ).textContent =
-            "Configurar irrigação";
+    document
+        .getElementById("modalTitle")
+        .textContent =
+        "Configurar irrigação";
 
-        document.getElementById(
-            "modalBg"
-        ).classList.add("show");
+    document
+        .getElementById("modalBg")
+        .classList
+        .add("show");
+};
 
-    };
 }
 
 // ======================================================
@@ -647,52 +709,55 @@ if (scheduleButton) {
 // ======================================================
 
 const closeModal =
-    document.getElementById("closeModal");
+document.getElementById("closeModal");
 
 if (closeModal) {
 
-    closeModal.onclick = () => {
+closeModal.onclick = () => {
 
-        document.getElementById(
-            "modalBg"
-        ).classList.remove("show");
+    document
+        .getElementById("modalBg")
+        .classList
+        .remove("show");
+};
 
-    };
 }
 
 // ======================================================
-// SALVAR CONFIGURAÇÃO DO MODAL
+// SALVAR MODAL
 // ======================================================
 
 const saveModal =
-    document.getElementById("saveModal");
+document.getElementById("saveModal");
 
 if (saveModal) {
 
-    saveModal.onclick = () => {
+saveModal.onclick = () => {
 
-        const time =
-            document.getElementById(
-                "scheduleTime"
-            ).value;
-
-        const min =
-            document.getElementById(
-                "minHumidity"
-            ).value;
-
+    const time =
         document.getElementById(
-            "modalBg"
-        ).classList.remove("show");
+            "scheduleTime"
+        ).value;
 
-        toast(
-            "🗓️ Agendado para " +
-            time +
-            " quando chegar a " +
-            min +
-            " de umidade."
-        );
-    };
+    const min =
+        document.getElementById(
+            "minHumidity"
+        ).value;
+
+    document
+        .getElementById("modalBg")
+        .classList
+        .remove("show");
+
+    toast(
+        "🗓️ Agendado para " +
+        time +
+        " quando chegar a " +
+        min +
+        "% de umidade."
+    );
+};
+
 }
 
 // ======================================================
@@ -700,55 +765,55 @@ if (saveModal) {
 // ======================================================
 
 const addPlant =
-    document.getElementById("addPlant");
+document.getElementById("addPlant");
 
 if (addPlant) {
 
-    addPlant.onclick = () => {
+addPlant.onclick = () => {
 
-        const name =
-            prompt(
-                "Nome da nova planta:"
-            );
+    const name =
+        prompt(
+            "Nome da nova planta:"
+        );
 
-        if (
-            name &&
-            name.trim()
-        ) {
+    if (
+        name &&
+        name.trim()
+    ) {
 
-            plants.push({
+        plants.push({
 
-                id: Date.now(),
+            id: Date.now(),
 
-                name:
-                    name.trim(),
+            name:
+                name.trim(),
 
-                icon:
-                    "🌱",
+            icon:
+                "🌱",
 
-                humidity:
-                    50,
+            humidity:
+                50,
 
-                status:
-                    "Atenção",
+            status:
+                "Atenção",
 
-                color:
-                    "orange",
+            color:
+                "orange",
 
-                time:
-                    "Sem registro"
+            time:
+                "agora"
+        });
 
-            });
+        render();
 
-            render();
+        toast(
+            "🌱 " +
+            name +
+            " adicionada!"
+        );
+    }
+};
 
-            toast(
-                "🌱 " +
-                name +
-                " adicionada!"
-            );
-        }
-    };
 }
 
 // ======================================================
@@ -756,57 +821,50 @@ if (addPlant) {
 // ======================================================
 
 document
-    .querySelectorAll(".toggle")
-    .forEach(t => {
+.querySelectorAll(".toggle")
+.forEach(t => {
 
-        t.onclick = () => {
+    t.onclick = () => {
 
-            t.classList.toggle("on");
+        t.classList.toggle("on");
 
-            toast(
+        toast(
 
-                t.dataset.toggle === "auto"
+            t.dataset.toggle === "auto"
 
-                    ? (
-                        t.classList.contains("on")
+                ? (
+                    t.classList.contains("on")
+                        ? "🤖 Irrigação automática ativada"
+                        : "Irrigação automática desativada"
+                )
 
-                            ? "🤖 Irrigação automática ativada"
-
-                            : "Irrigação automática desativada"
-                      )
-
-                    : (
-                        t.classList.contains("on")
-
-                            ? "🔔 Notificações ativadas"
-
-                            : "🔕 Notificações desativadas"
-                      )
-
-            );
-
-        };
-
-    });
+                : (
+                    t.classList.contains("on")
+                        ? "🔔 Notificações ativadas"
+                        : "🔕 Notificações desativadas"
+                )
+        );
+    };
+});
 
 // ======================================================
 // INTERVALO DO SENSOR
 // ======================================================
 
 const sensorInterval =
-    document.getElementById(
-        "sensorInterval"
-    );
+document.getElementById(
+"sensorInterval"
+);
 
 if (sensorInterval) {
 
-    sensorInterval.onclick = () => {
+sensorInterval.onclick = () => {
 
-        toast(
-            "⏱️ Intervalos disponíveis: 1, 5, 10 ou 15 minutos."
-        );
+    toast(
+        "⏱️ Intervalos disponíveis: 1, 5, 10 ou 15 minutos."
+    );
+};
 
-    };
 }
 
 // ======================================================
@@ -815,15 +873,11 @@ if (sensorInterval) {
 
 render();
 
+// Busca histórico imediatamente
 fetchHistoryFromSupabase();
 
-// ======================================================
-// ATUALIZA HISTÓRICO AUTOMATICAMENTE
-// A CADA 10 SEGUNDOS
-// ======================================================
-
+// Atualiza histórico a cada 10 segundos
 setInterval(
-    fetchHistoryFromSupabase,
-    10000
+fetchHistoryFromSupabase,
+10000
 );
-```
