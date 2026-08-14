@@ -41,7 +41,7 @@ const plants = [
 ];
 
 // ======================================================
-// HISTÓRICO
+// HISTÓRICO E NAVEGAÇÃO
 // ======================================================
 let history = [];
 let activePage = "home";
@@ -78,9 +78,6 @@ function formatarDataBrasil(isoString) {
     });
 }
 
-// ======================================================
-// BUSCAR HISTÓRICO DO SUPABASE (Apenas as 5 últimas)
-// ======================================================
 // ======================================================
 // BUSCAR HISTÓRICO DO SUPABASE (Com atualização da última rega)
 // ======================================================
@@ -135,10 +132,9 @@ async function fetchHistoryFromSupabase() {
 
         // 2. ATUALIZA A ÚLTIMA IRRIGACÃO NO CARD PRINCIPAL REAL-TIME
         if (history.length > 0) {
-            // Pega o horário do registro mais recente
             const ultimaRega = history[0].time; 
             
-            // Atualiza no array de plantas
+            // Atualiza no objeto da planta principal
             plants[0].time = ultimaRega;
 
             // Atualiza direto no elemento HTML da tela se ele existir
@@ -148,46 +144,7 @@ async function fetchHistoryFromSupabase() {
             }
         }
 
-        // ATUALIZA SITE
-        render();
-
-    } catch (erro) {
-        console.error("[Supabase] Erro de conexão:", erro);
-        history = [];
-        render();
-    }
-}
-
-        // CONVERTE RESPOSTA
-        const dados = await resposta.json();
-        console.log("[Supabase] Dados recebidos:", dados);
-
-        // SE NÃO EXISTIR REGISTRO
-        if (!Array.isArray(dados) || dados.length === 0) {
-            history = [];
-            render();
-            return;
-        }
-
-        // MONTA HISTÓRICO (Limitado aos 5 primeiros)
-        history = dados
-            .map(item => {
-                // Tenta pegar o campo da data (com ou sem acento / created_at)
-                const dataBruta = item["horarios"] || item["horários"] || item["created_at"];
-                
-                // Pega a mensagem do ESP32 ou coloca um padrão
-                const textoMensagem = item.mensagem || item.comando || "Comando registrado";
-
-                return {
-                    plant: "PlantCare",
-                    icon: "💧",
-                    time: formatarDataBrasil(dataBruta),
-                    value: textoMensagem
-                };
-            })
-            .slice(0, 5); // Garante no máximo 5 registros
-
-        // ATUALIZA SITE
+        // ATUALIZA O RESTANTE DO SITE
         render();
 
     } catch (erro) {
