@@ -165,31 +165,24 @@ async function fetchHistoryFromSupabase() {
         // MONTA HISTÓRICO
         // ==================================================
 
-        history = dados
-            .filter(item => {
+       // ==================================================
+        // MONTA HISTÓRICO (Traz tudo sem travar)
+        // ==================================================
 
-                // Mostra somente comandos relacionados
-                // à irrigação
+        history = dados.map(item => {
+            // Tenta pegar o campo da data (com ou sem acento / created_at)
+            const dataBruta = item["horários"] || item["horarios"] || item["created_at"];
+            
+            // Pega a mensagem do ESP32 ou coloca um padrão
+            const textoMensagem = item.mensagem || item.comando || "Comando registrado";
 
-                return (
-                    item.mensagem === "REGAR" ||
-                    item.mensagem === "REGADO"
-                );
-
-            })
-            .map(item => {
-
-                return {
-                    plant: "PlantCare",
-                    icon: "💧",
-                    time: formatarDataBrasil(
-                        item["horários"]
-                    ),
-                    value: item.mensagem
-                };
-
-            });
-
+            return {
+                plant: "PlantCare",
+                icon: "💧",
+                time: formatarDataBrasil(dataBruta),
+                value: textoMensagem
+            };
+        });
         // ==================================================
         // ATUALIZA SITE
         // ==================================================
