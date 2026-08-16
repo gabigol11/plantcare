@@ -50,7 +50,7 @@
         <div class="ring" id="mainRing"><span id="mainHumidity">60%</span></div>
         <div><strong>Umidade Atual</strong><p>Última irrigação: <b id="lastWater">2 horas atrás</b></p></div>
       </div>
-      <div class="actions">
+      <div class="actions" id="manualActions">
         <button class="btn primary" id="waterBtn">💧 Regar Agora</button>
         <button class="btn secondary" id="scheduleBtn">▣ Configurar Horário</button>
       </div>
@@ -74,7 +74,7 @@
 <section id="settings" class="page">
   <div class="head"><h2>Configurações</h2></div>
   <div class="settings">
-    <div class="setting"><div><strong>Irrigação automática</strong><p class="muted">Regar quando a umidade estiver baixa.</p></div><button class="toggle" data-toggle="auto"></button></div>
+    <div class="setting"><div><strong>Irrigação automática</strong><p class="muted">Regar quando a umidade estiver baixa.</p></div><button class="toggle" data-toggle="auto" aria-label="Alternar irrigação automática"></button></div>
     <div class="setting"><div><strong>Notificações</strong><p class="muted">Avisar quando uma planta precisar de água.</p></div><button class="toggle on" data-toggle="notifications"></button></div>
     <div class="setting"><div><strong>Atualização dos sensores</strong><p class="muted">Intervalo atual: 5 minutos.</p></div><button class="btn secondary" id="sensorInterval">Alterar</button></div>
   </div>
@@ -133,5 +133,20 @@
 <div class="toast" id="toast"></div>
 <script src="script.js"></script>
 <script src="time-picker.js"></script>
+<script>
+(() => {
+  const autoToggle = document.querySelector('[data-toggle="auto"]');
+  const manualActions = document.getElementById('manualActions');
+  if (!autoToggle || !manualActions) return;
+
+  const syncMode = () => {
+    const automatic = autoToggle.classList.contains('on');
+    manualActions.style.display = automatic ? 'none' : '';
+  };
+
+  autoToggle.addEventListener('click', () => setTimeout(syncMode, 0));
+  syncMode();
+})();
+</script>
 </body>
 </html>
