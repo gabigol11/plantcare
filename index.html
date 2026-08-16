@@ -45,11 +45,7 @@
     <div class="hero-content">
       <div class="eyebrow">MONITORAMENTO EM TEMPO REAL</div>
       <h2 id="mainPlantName">Jiboia</h2>
-      <p class="hero-sub" id="mainStatus">Sua planta está em boas condições.</p>
-      <div class="humidity">
-        <div class="ring" id="mainRing"><span id="mainHumidity">60%</span></div>
-        <div><strong>Umidade Atual</strong><p>Última irrigação: <b id="lastWater">2 horas atrás</b></p></div>
-      </div>
+      <p class="hero-sub" id="mainStatus">A Jiboia gosta de luz indireta e regas moderadas. Evite encharcar o solo.</p>
       <div class="actions" id="manualActions">
         <button class="btn primary" id="waterBtn">💧 Regar Agora</button>
         <button class="btn secondary" id="scheduleBtn">▣ Configurar Horário</button>
@@ -101,53 +97,19 @@
           <button type="button" class="time-part" id="minuteDisplay">00</button>
         </div>
         <div class="time-controls">
-          <div class="time-column">
-            <span class="time-label">Hora</span>
-            <button type="button" class="time-step" data-time="hour" data-step="1">＋</button>
-            <strong id="hourValue">08</strong>
-            <button type="button" class="time-step" data-time="hour" data-step="-1">−</button>
-          </div>
-          <div class="time-column">
-            <span class="time-label">Minuto</span>
-            <button type="button" class="time-step" data-time="minute" data-step="5">＋</button>
-            <strong id="minuteValue">00</strong>
-            <button type="button" class="time-step" data-time="minute" data-step="-5">−</button>
-          </div>
+          <div class="time-column"><span class="time-label">Hora</span><button type="button" class="time-step" data-time="hour" data-step="1">＋</button><strong id="hourValue">08</strong><button type="button" class="time-step" data-time="hour" data-step="-1">−</button></div>
+          <div class="time-column"><span class="time-label">Minuto</span><button type="button" class="time-step" data-time="minute" data-step="5">＋</button><strong id="minuteValue">00</strong><button type="button" class="time-step" data-time="minute" data-step="-5">−</button></div>
         </div>
-        <div class="quick-times">
-          <button type="button" data-quick="07:00">07:00</button>
-          <button type="button" data-quick="08:00">08:00</button>
-          <button type="button" data-quick="12:00">12:00</button>
-          <button type="button" data-quick="18:00">18:00</button>
-        </div>
+        <div class="quick-times"><button type="button" data-quick="07:00">07:00</button><button type="button" data-quick="08:00">08:00</button><button type="button" data-quick="12:00">12:00</button><button type="button" data-quick="18:00">18:00</button></div>
         <p class="time-summary">💧 A irrigação será feita às <strong id="timeSummary">08:00</strong>.</p>
         <input id="scheduleTime" type="hidden" value="08:00">
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn secondary" id="closeModal">Cancelar</button>
-      <button class="btn primary" id="saveModal">Agendar</button>
-    </div>
+    <div class="modal-actions"><button class="btn secondary" id="closeModal">Cancelar</button><button class="btn primary" id="saveModal">Agendar</button></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 <script src="script.js"></script>
 <script src="time-picker.js"></script>
-<script src="config-mode.js"></script>
-<script>
-(() => {
-  const autoToggle = document.querySelector('[data-toggle="auto"]');
-  const manualActions = document.getElementById('manualActions');
-  if (!autoToggle || !manualActions) return;
-
-  const syncMode = () => {
-    const automatic = autoToggle.classList.contains('on');
-    manualActions.style.display = automatic ? 'none' : '';
-  };
-
-  autoToggle.addEventListener('click', () => setTimeout(syncMode, 0));
-  syncMode();
-})();
-</script>
 </body>
 </html>
