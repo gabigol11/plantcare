@@ -495,12 +495,11 @@ if (closeModal) {
 
 const saveModal = document.getElementById("saveModal");
 if (saveModal) {
-    saveModal.onclick = () => {
+      saveModal.onclick = () => {
         const time = document.getElementById("scheduleTime").value;
-        const min = document.getElementById("minHumidity").value;
-
+    
         document.getElementById("modalBg").classList.remove("show");
-        toast("🗓️ Agendado para " + time + " quando chegar a " + min + "% de umidade.");
+        toast("🗓️ Irrigação agendada para " + time + ".");
     };
 }
 
