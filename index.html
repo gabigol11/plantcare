@@ -92,16 +92,45 @@
     <div id="modalBody">
       <label>Planta</label>
       <select id="plantSelect"></select>
-      <label>Horário</label>
-      <input id="scheduleTime" type="time" value="08:00">
+      <label>Quando regar?</label>
+      <div class="time-picker" id="timePicker" aria-label="Escolher horário">
+        <div class="time-display">
+          <button type="button" class="time-part active" id="hourDisplay">08</button>
+          <span>:</span>
+          <button type="button" class="time-part" id="minuteDisplay">00</button>
+        </div>
+        <div class="time-controls">
+          <div class="time-column">
+            <span class="time-label">Hora</span>
+            <button type="button" class="time-step" data-time="hour" data-step="1">＋</button>
+            <strong id="hourValue">08</strong>
+            <button type="button" class="time-step" data-time="hour" data-step="-1">−</button>
+          </div>
+          <div class="time-column">
+            <span class="time-label">Minuto</span>
+            <button type="button" class="time-step" data-time="minute" data-step="5">＋</button>
+            <strong id="minuteValue">00</strong>
+            <button type="button" class="time-step" data-time="minute" data-step="-5">−</button>
+          </div>
+        </div>
+        <div class="quick-times">
+          <button type="button" data-quick="07:00">07:00</button>
+          <button type="button" data-quick="08:00">08:00</button>
+          <button type="button" data-quick="12:00">12:00</button>
+          <button type="button" data-quick="18:00">18:00</button>
+        </div>
+        <p class="time-summary">💧 A irrigação será feita às <strong id="timeSummary">08:00</strong>.</p>
+        <input id="scheduleTime" type="hidden" value="08:00">
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn secondary" id="closeModal">Cancelar</button>
-      <button class="btn primary" id="saveModal">Salvar</button>
+      <button class="btn primary" id="saveModal">Agendar</button>
     </div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 <script src="script.js"></script>
+<script src="time-picker.js"></script>
 </body>
 </html>
