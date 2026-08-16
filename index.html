@@ -111,5 +111,63 @@
 <div class="toast" id="toast"></div>
 <script src="script.js"></script>
 <script src="time-picker.js"></script>
+<script>
+(() => {
+  const SUPABASE_URL = "https://lbwhdmbsudonlquchtow.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
+  const toggle = document.querySelector('[data-toggle="auto"]');
+  const manualActions = document.getElementById('manualActions');
+  if (!toggle || !manualActions) return;
+
+  async function carregarModo() {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?select=modo&limit=1`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      });
+      if (!response.ok) throw new Error('Falha ao consultar configuração');
+      const rows = await response.json();
+      const automatico = rows[0]?.modo === 'automatico';
+      toggle.classList.toggle('on', automatico);
+      manualActions.style.display = automatico ? 'none' : '';
+    } catch (error) {
+      console.error('[Supabase] Não foi possível carregar o modo:', error);
+    }
+  }
+
+  async function salvarModo(automatico) {
+    const modo = automatico ? 'automatico' : 'manual';
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/configuracoes?id=eq.1`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({ modo, updated_at: new Date().toISOString() })
+      });
+      if (!response.ok) throw new Error(await response.text());
+      manualActions.style.display = automatico ? 'none' : '';
+    } catch (error) {
+      console.error('[Supabase] Não foi possível salvar o modo:', error);
+      toggle.classList.toggle('on', !automatico);
+      manualActions.style.display = !automatico ? 'none' : '';
+      if (typeof toast === 'function') toast('❌ Não foi possível salvar o modo.');
+    }
+  }
+
+  toggle.addEventListener('click', () => {
+    const automatico = toggle.classList.contains('on');
+    salvarModo(automatico);
+  });
+
+  carregarModo();
+  setInterval(carregarModo, 15000);
+})();
+</script>
 </body>
 </html>
