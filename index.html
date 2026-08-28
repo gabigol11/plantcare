@@ -46,6 +46,18 @@
       <div class="eyebrow">MONITORAMENTO EM TEMPO REAL</div>
       <h2 id="mainPlantName">Jiboia</h2>
       <p class="hero-sub" id="mainStatus">A Jiboia gosta de luz indireta e regas moderadas. Evite encharcar o solo.</p>
+
+      <!-- MOSTRADOR DE UMIDADE DA PLANTA PRINCIPAL -->
+      <div class="humidity" id="mainHumidityDisplay">
+        <div class="ring" id="mainRing">
+          <span id="mainHumidity">60%</span>
+        </div>
+        <div>
+          <strong>Umidade Atual</strong>
+          <p>Última irrigação: <b id="lastWater">2 horas atrás</b></p>
+        </div>
+      </div>
+
       <div class="actions" id="manualActions">
         <button class="btn primary" id="waterBtn">💧 Regar Agora</button>
         <button class="btn secondary" id="scheduleBtn">▣ Configurar Horário</button>
