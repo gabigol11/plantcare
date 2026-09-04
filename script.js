@@ -44,7 +44,9 @@ const plants = [
     }
 ];
 
-// Índice da planta selecionada atualmente na tela principal
+// ======================================================
+// PLANTA SELECIONADA
+// ======================================================
 let currentPlantIndex = 0;
 
 // ======================================================
@@ -61,7 +63,7 @@ const supabaseUrl = "https://lbwhdmbsudonlquchtow.supabase.co";
 const supabaseKey = "sb_publishable_DRKSWNIHKCFcjURyxQz4Og_Q-4WQuqR";
 
 // ======================================================
-// CONVERTE DATA/HORA PARA FORMATO AMIGÁVEL (Hoje, Ontem, etc)
+// CONVERTE DATA/HORA
 // ======================================================
 function formatarDataBrasil(isoString) {
     if (!isoString) {
@@ -82,10 +84,21 @@ function formatarDataBrasil(isoString) {
         minute: "2-digit"
     });
 
-    const dData = new Date(data.getFullYear(), data.getMonth(), data.getDate());
-    const dAgora = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const dData = new Date(
+        data.getFullYear(),
+        data.getMonth(),
+        data.getDate()
+    );
 
-    const diffDias = Math.round((dAgora - dData) / (1000 * 60 * 60 * 24));
+    const dAgora = new Date(
+        agora.getFullYear(),
+        agora.getMonth(),
+        agora.getDate()
+    );
+
+    const diffDias = Math.round(
+        (dAgora - dData) / (1000 * 60 * 60 * 24)
+    );
 
     if (diffDias === 0) {
         return `Hoje, às ${horaFormatada}`;
@@ -97,19 +110,22 @@ function formatarDataBrasil(isoString) {
             day: "2-digit",
             month: "2-digit"
         });
+
         return `${diaMes}, às ${horaFormatada}`;
     }
 }
 
 // ======================================================
-// BUSCAR HISTÓRICO DO SUPABASE
+// BUSCAR UMIDADE ATUAL DO SUPABASE
 // ======================================================
-async function fetchHistoryFromSupabase() {
+async function fetchHumidityFromSupabase() {
+
     try {
-        console.log("[Supabase] Buscando histórico...");
+
+        console.log("[Supabase] Buscando umidade...");
 
         const resposta = await fetch(
-            `${supabaseUrl}/rest/v1/comandos?select=*&order=horarios.desc&limit=5`,
+            `${supabaseUrl}/rest/v1/historico?select=humidade,created_at&order=created_at.desc&limit=1`,
             {
                 method: "GET",
                 headers: {
@@ -119,55 +135,288 @@ async function fetchHistoryFromSupabase() {
             }
         );
 
-        console.log("[Supabase] HTTP:", resposta.status);
+        console.log(
+            "[Supabase] HTTP umidade:",
+            resposta.status
+        );
 
         if (!resposta.ok) {
+
             const erroTexto = await resposta.text();
-            console.error("[Supabase] Erro:", erroTexto);
-            history = [];
-            render();
+
+            console.error(
+                "[Supabase] Erro ao buscar umidade:",
+                erroTexto
+            );
+
             return;
         }
 
         const dados = await resposta.json();
 
-        if (!Array.isArray(dados) || dados.length === 0) {
-            history = [];
-            render();
+        if (
+            !Array.isArray(dados) ||
+            dados.length === 0
+        ) {
+
+            console.warn(
+                "[Supabase] Nenhum registro de umidade encontrado."
+            );
+
             return;
         }
 
-        // 1. MONTA HISTÓRICO
+        // A coluna humidade é TEXT no Supabase.
+        // Aqui transformamos para número.
+        let umidade = Number(dados[0].humidade);
+
+        if (!Number.isFinite(umidade)) {
+
+            console.warn(
+                "[Supabase] Valor de umidade inválido:",
+                dados[0].humidade
+            );
+
+            return;
+        }
+
+        // Garante 0 até 100%.
+        umidade = Math.max(
+            0,
+            Math.min(100, umidade)
+        );
+
+        // ==================================================
+        // JIBOIA = SENSOR ATUAL
+        // ==================================================
+
+        plants[0].humidity = umidade;
+
+        // ==================================================
+        // ATUALIZA STATUS
+        // ==================================================
+
+        if (umidade < 40) {
+
+            plants[0].status = "Precisa de água";
+            plants[0].color = "red";
+
+        } else if (umidade < 50) {
+
+            plants[0].status = "Atenção";
+            plants[0].color = "orange";
+
+        } else {
+
+            plants[0].status = "Ideal";
+            plants[0].color = "green";
+        }
+
+        console.log(
+            "[Supabase] Umidade atual:",
+            umidade + "%"
+        );
+
+        // Atualiza mostrador principal
+        updateMain();
+
+        // ==================================================
+        // ATUALIZA CARDS
+        // ==================================================
+
+        const homePlants =
+            document.getElementById("homePlants");
+
+        if (homePlants) {
+
+            homePlants.innerHTML = plants
+                .slice(0, 3)
+                .map(card)
+                .join("");
+        }
+
+        // ==================================================
+        // ATUALIZA LISTA DE PLANTAS
+        // ==================================================
+
+        const plantsList =
+            document.getElementById("plantsList");
+
+        if (plantsList) {
+
+            plantsList.innerHTML = plants
+                .map(p => `
+                    <div class="plant-item">
+
+                        <div class="rowleft">
+
+                            <div class="thumb">
+                                ${p.icon}
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    ${p.name}
+                                </strong>
+
+                                <p class="muted">
+                                    ${p.humidity}% de umidade · ${p.status}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <button onclick="selectPlant(${p.id})">
+                            Detalhes
+                        </button>
+
+                    </div>
+                `)
+                .join("");
+        }
+
+    } catch (erro) {
+
+        console.error(
+            "[Supabase] Erro de conexão ao buscar umidade:",
+            erro
+        );
+    }
+}
+
+// ======================================================
+// BUSCAR HISTÓRICO DO SUPABASE
+// ======================================================
+async function fetchHistoryFromSupabase() {
+
+    try {
+
+        console.log(
+            "[Supabase] Buscando histórico..."
+        );
+
+        const resposta = await fetch(
+            `${supabaseUrl}/rest/v1/comandos?select=*&order=horarios.desc&limit=5`,
+            {
+                method: "GET",
+
+                headers: {
+                    "apikey": supabaseKey,
+                    "Authorization": `Bearer ${supabaseKey}`
+                }
+            }
+        );
+
+        console.log(
+            "[Supabase] HTTP:",
+            resposta.status
+        );
+
+        if (!resposta.ok) {
+
+            const erroTexto =
+                await resposta.text();
+
+            console.error(
+                "[Supabase] Erro:",
+                erroTexto
+            );
+
+            history = [];
+
+            render();
+
+            return;
+        }
+
+        const dados =
+            await resposta.json();
+
+        if (
+            !Array.isArray(dados) ||
+            dados.length === 0
+        ) {
+
+            history = [];
+
+            render();
+
+            return;
+        }
+
+        // ==================================================
+        // MONTA HISTÓRICO
+        // ==================================================
+
         history = dados
+
             .map(item => {
-                const dataBruta = item["horarios"] || item["horários"] || item["created_at"];
-                const textoMensagem = item.mensagem || item.comando || "Comando registrado";
+
+                const dataBruta =
+                    item["horarios"] ||
+                    item["horários"] ||
+                    item["created_at"];
+
+                const textoMensagem =
+                    item.mensagem ||
+                    item.comando ||
+                    "Comando registrado";
 
                 return {
+
                     plant: "PlantCare",
+
                     icon: "💧",
-                    time: formatarDataBrasil(dataBruta),
-                    value: textoMensagem
+
+                    time:
+                        formatarDataBrasil(
+                            dataBruta
+                        ),
+
+                    value:
+                        textoMensagem
                 };
             })
+
             .slice(0, 5);
 
-        // 2. ATUALIZA A ÚLTIMA IRRIGACÃO DA PLANTA ATUAL
-        if (history.length > 0) {
-            const ultimaRega = history[0].time; 
-            plants[currentPlantIndex].time = ultimaRega;
+        // ==================================================
+        // ÚLTIMA IRRIGAÇÃO
+        // ==================================================
 
-            const lastWaterEl = document.getElementById("lastWater");
+        if (history.length > 0) {
+
+            const ultimaRega =
+                history[0].time;
+
+            plants[currentPlantIndex].time =
+                ultimaRega;
+
+            const lastWaterEl =
+                document.getElementById(
+                    "lastWater"
+                );
+
             if (lastWaterEl) {
-                lastWaterEl.textContent = ultimaRega;
+
+                lastWaterEl.textContent =
+                    ultimaRega;
             }
         }
 
         render();
 
     } catch (erro) {
-        console.error("[Supabase] Erro de conexão:", erro);
+
+        console.error(
+            "[Supabase] Erro de conexão:",
+            erro
+        );
+
         history = [];
+
         render();
     }
 }
@@ -176,20 +425,29 @@ async function fetchHistoryFromSupabase() {
 // TOAST
 // ======================================================
 function toast(msg) {
-    const el = document.getElementById("toast");
+
+    const el =
+        document.getElementById("toast");
+
     if (!el) return;
 
     el.textContent = msg;
+
     el.classList.add("show");
 
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove("show"), 2500);
+
+    toastTimer = setTimeout(
+        () => el.classList.remove("show"),
+        2500
+    );
 }
 
 // ======================================================
 // CARD DA PLANTA
 // ======================================================
 function card(p) {
+
     let statusClass =
         p.color === "green"
             ? "ok"
@@ -198,15 +456,30 @@ function card(p) {
             : "crit";
 
     return `
-    <article class="card" onclick="selectPlant(${p.id})">
+
+    <article
+        class="card"
+        onclick="selectPlant(${p.id})"
+    >
+
         <div class="cardtop">
+
             <div class="thumb">
                 ${p.icon}
             </div>
+
             <div>
-                <strong>${p.name}</strong>
-                <p>Sensor conectado</p>
+
+                <strong>
+                    ${p.name}
+                </strong>
+
+                <p>
+                    Sensor conectado
+                </p>
+
             </div>
+
         </div>
 
         <div class="percent">
@@ -214,18 +487,28 @@ function card(p) {
         </div>
 
         <div class="bar">
-            <span class="${p.color}" style="width:${p.humidity}%"></span>
+
+            <span
+                class="${p.color}"
+                style="width:${p.humidity}%"
+            ></span>
+
         </div>
 
         <div class="bottom">
+
             <span class="${statusClass}">
                 ● ${p.status}
             </span>
+
             <span>
                 ${p.time}
             </span>
+
         </div>
+
     </article>
+
     `;
 }
 
@@ -233,164 +516,347 @@ function card(p) {
 // RENDER
 // ======================================================
 function render() {
+
+    // ==================================================
     // PLANTAS HOME
-    const homePlants = document.getElementById("homePlants");
+    // ==================================================
+
+    const homePlants =
+        document.getElementById(
+            "homePlants"
+        );
+
     if (homePlants) {
-        homePlants.innerHTML = plants
-            .slice(0, 3)
-            .map(card)
-            .join("");
+
+        homePlants.innerHTML =
+            plants
+
+                .slice(0, 3)
+
+                .map(card)
+
+                .join("");
     }
 
+    // ==================================================
     // LISTA DE PLANTAS
-    const plantsList = document.getElementById("plantsList");
-    if (plantsList) {
-        plantsList.innerHTML = plants
-            .map(p => `
-            <div class="plant-item">
-                <div class="rowleft">
-                    <div class="thumb">
-                        ${p.icon}
-                    </div>
-                    <div>
-                        <strong>${p.name}</strong>
-                        <p class="muted">
-                            ${p.humidity}% de umidade · ${p.status}
-                        </p>
-                    </div>
-                </div>
+    // ==================================================
 
-                <button onclick="selectPlant(${p.id})">
-                    Detalhes
-                </button>
-            </div>
-            `)
-            .join("");
+    const plantsList =
+        document.getElementById(
+            "plantsList"
+        );
+
+    if (plantsList) {
+
+        plantsList.innerHTML =
+            plants
+
+                .map(p => `
+
+                    <div class="plant-item">
+
+                        <div class="rowleft">
+
+                            <div class="thumb">
+                                ${p.icon}
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    ${p.name}
+                                </strong>
+
+                                <p class="muted">
+                                    ${p.humidity}% de umidade · ${p.status}
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                        <button
+                            onclick="selectPlant(${p.id})"
+                        >
+                            Detalhes
+                        </button>
+
+                    </div>
+
+                `)
+
+                .join("");
     }
 
+    // ==================================================
     // HISTÓRICO
-    let hist;
-    if (history.length > 0) {
-        hist = history
-            .map(h => `
-            <div class="row">
-                <div class="rowleft">
-                    <div class="ico">
-                        ${h.icon}
-                    </div>
-                    <div>
-                        <strong>${h.plant}</strong>
-                        <br>
-                        <small class="muted">
-                            ${h.time}
-                        </small>
-                    </div>
-                </div>
+    // ==================================================
 
-                <span class="value">
-                    ${h.value}
-                </span>
-            </div>
-            `)
-            .join("");
+    let hist;
+
+    if (history.length > 0) {
+
+        hist =
+            history
+
+                .map(h => `
+
+                    <div class="row">
+
+                        <div class="rowleft">
+
+                            <div class="ico">
+                                ${h.icon}
+                            </div>
+
+                            <div>
+
+                                <strong>
+                                    ${h.plant}
+                                </strong>
+
+                                <br>
+
+                                <small class="muted">
+                                    ${h.time}
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                        <span class="value">
+                            ${h.value}
+                        </span>
+
+                    </div>
+
+                `)
+
+                .join("");
+
     } else {
+
         hist = `
-            <p class="muted" style="padding:10px;">
+
+            <p
+                class="muted"
+                style="padding:10px;"
+            >
                 Nenhum registro de irrigação encontrado.
             </p>
+
         `;
     }
 
-    const homeHistory = document.getElementById("homeHistory");
+    const homeHistory =
+        document.getElementById(
+            "homeHistory"
+        );
+
     if (homeHistory) {
-        homeHistory.innerHTML = hist;
+
+        homeHistory.innerHTML =
+            hist;
     }
 
-    const fullHistory = document.getElementById("fullHistory");
+    const fullHistory =
+        document.getElementById(
+            "fullHistory"
+        );
+
     if (fullHistory) {
-        fullHistory.innerHTML = hist;
+
+        fullHistory.innerHTML =
+            hist;
     }
 
-    // SELECT DE PLANTAS NO MODAL
-    const plantSelect = document.getElementById("plantSelect");
+    // ==================================================
+    // SELECT DE PLANTAS
+    // ==================================================
+
+    const plantSelect =
+        document.getElementById(
+            "plantSelect"
+        );
+
     if (plantSelect) {
-        plantSelect.innerHTML = plants
-            .map(p => `<option>${p.name}</option>`)
-            .join("");
+
+        plantSelect.innerHTML =
+            plants
+
+                .map(
+                    p =>
+                        `<option>${p.name}</option>`
+                )
+
+                .join("");
     }
 
+    // ==================================================
     // ATUALIZA PLANTA PRINCIPAL
+    // ==================================================
+
     updateMain();
 }
 
 // ======================================================
-// ATUALIZA PLANTA PRINCIPAL (HERO)
+// ATUALIZA PLANTA PRINCIPAL
 // ======================================================
 function updateMain() {
-    const p = plants[currentPlantIndex];
+
+    const p =
+        plants[currentPlantIndex];
+
     if (!p) return;
 
-    const pct = p.humidity;
+    const pct =
+        p.humidity;
 
-    // Imagem da planta
-    const mainPlantImg = document.getElementById("mainPlantImg");
-    if (mainPlantImg && p.img) {
-        mainPlantImg.src = p.img;
-        mainPlantImg.alt = p.name;
+    // Imagem
+    const mainPlantImg =
+        document.getElementById(
+            "mainPlantImg"
+        );
+
+    if (
+        mainPlantImg &&
+        p.img
+    ) {
+
+        mainPlantImg.src =
+            p.img;
+
+        mainPlantImg.alt =
+            p.name;
     }
 
-    const mainPlantName = document.getElementById("mainPlantName");
+    // Nome
+    const mainPlantName =
+        document.getElementById(
+            "mainPlantName"
+        );
+
     if (mainPlantName) {
-        mainPlantName.textContent = p.name;
+
+        mainPlantName.textContent =
+            p.name;
     }
 
-    const lastWater = document.getElementById("lastWater");
+    // Última rega
+    const lastWater =
+        document.getElementById(
+            "lastWater"
+        );
+
     if (lastWater) {
-        lastWater.textContent = p.time;
+
+        lastWater.textContent =
+            p.time;
     }
 
-    const mainHumidity = document.getElementById("mainHumidity");
+    // ==================================================
+    // UMIDADE
+    // ==================================================
+
+    const mainHumidity =
+        document.getElementById(
+            "mainHumidity"
+        );
+
     if (mainHumidity) {
-        mainHumidity.textContent = pct + "%";
+
+        mainHumidity.textContent =
+            pct + "%";
     }
 
-    const mainRing = document.getElementById("mainRing");
+    // ==================================================
+    // CÍRCULO
+    // ==================================================
+
+    const mainRing =
+        document.getElementById(
+            "mainRing"
+        );
+
     if (mainRing) {
-        mainRing.style.background = `conic-gradient(var(--g) 0 ${pct}%, #d5dfd0 ${pct}% 100%)`;
+
+        mainRing.style.background =
+            `conic-gradient(
+                var(--g) 0 ${pct}%,
+                #d5dfd0 ${pct}% 100%
+            )`;
     }
 
-    const mainStatus = document.getElementById("mainStatus");
+    // ==================================================
+    // STATUS
+    // ==================================================
+
+    const mainStatus =
+        document.getElementById(
+            "mainStatus"
+        );
+
     if (mainStatus) {
+
         mainStatus.textContent =
+
             pct < 40
                 ? "Sua planta precisa de água."
+
                 : pct < 50
                 ? "A umidade está ficando baixa."
+
                 : "Sua planta está em boas condições.";
     }
 }
 
 // ======================================================
-// NAVEGAÇÃO POR SETAS NO HERO CARD
+// NAVEGAÇÃO POR SETAS
 // ======================================================
-const prevBtn = document.getElementById("prevPlantBtn");
+const prevBtn =
+    document.getElementById(
+        "prevPlantBtn"
+    );
+
 if (prevBtn) {
+
     prevBtn.onclick = () => {
+
         currentPlantIndex--;
-        if (currentPlantIndex < 0) {
-            currentPlantIndex = plants.length - 1;
+
+        if (
+            currentPlantIndex < 0
+        ) {
+
+            currentPlantIndex =
+                plants.length - 1;
         }
+
         updateMain();
     };
 }
 
-const nextBtn = document.getElementById("nextPlantBtn");
+const nextBtn =
+    document.getElementById(
+        "nextPlantBtn"
+    );
+
 if (nextBtn) {
+
     nextBtn.onclick = () => {
+
         currentPlantIndex++;
-        if (currentPlantIndex >= plants.length) {
+
+        if (
+            currentPlantIndex >=
+            plants.length
+        ) {
+
             currentPlantIndex = 0;
         }
+
         updateMain();
     };
 }
@@ -399,15 +865,27 @@ if (nextBtn) {
 // NAVEGAÇÃO DE PÁGINAS
 // ======================================================
 function navigate(page) {
-    activePage = page;
 
-    document.querySelectorAll(".page").forEach(x =>
-        x.classList.toggle("active", x.id === page)
-    );
+    activePage =
+        page;
 
-    document.querySelectorAll("[data-page]").forEach(x =>
-        x.classList.toggle("active", x.dataset.page === page)
-    );
+    document
+        .querySelectorAll(".page")
+        .forEach(x =>
+            x.classList.toggle(
+                "active",
+                x.id === page
+            )
+        );
+
+    document
+        .querySelectorAll("[data-page]")
+        .forEach(x =>
+            x.classList.toggle(
+                "active",
+                x.dataset.page === page
+            )
+        );
 
     window.scrollTo({
         top: 0,
@@ -415,143 +893,324 @@ function navigate(page) {
     });
 }
 
-document.addEventListener("click", e => {
-    const b = e.target.closest("[data-page]");
-    if (b) {
-        navigate(b.dataset.page);
+document.addEventListener(
+    "click",
+    e => {
+
+        const b =
+            e.target.closest(
+                "[data-page]"
+            );
+
+        if (b) {
+
+            navigate(
+                b.dataset.page
+            );
+        }
     }
-});
+);
 
 // ======================================================
-// SELECIONAR PLANTA POR ID
+// SELECIONAR PLANTA
 // ======================================================
 function selectPlant(id) {
-    const idx = plants.findIndex(x => x.id === id);
+
+    const idx =
+        plants.findIndex(
+            x => x.id === id
+        );
+
     if (idx === -1) return;
 
-    currentPlantIndex = idx;
+    currentPlantIndex =
+        idx;
 
     updateMain();
+
     navigate("home");
-    toast("🌱 " + plants[idx].name + " selecionada");
+
+    toast(
+        "🌱 " +
+        plants[idx].name +
+        " selecionada"
+    );
 }
 
 // ======================================================
 // REGAR AGORA
 // ======================================================
 async function waterNow() {
-    try {
-        console.log("[Supabase] Enviando REGAR...");
 
-        const resposta = await fetch(`${supabaseUrl}/rest/v1/comandos`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "apikey": supabaseKey,
-                "Authorization": `Bearer ${supabaseKey}`,
-                "Prefer": "return=minimal"
-            },
-            body: JSON.stringify({
-                mensagem: "REGAR"
-            })
-        });
+    try {
+
+        console.log(
+            "[Supabase] Enviando REGAR..."
+        );
+
+        const resposta =
+            await fetch(
+                `${supabaseUrl}/rest/v1/comandos`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "apikey":
+                            supabaseKey,
+
+                        "Authorization":
+                            `Bearer ${supabaseKey}`,
+
+                        "Prefer":
+                            "return=minimal"
+                    },
+
+                    body: JSON.stringify({
+                        mensagem: "REGAR"
+                    })
+                }
+            );
 
         if (resposta.ok) {
-            toast("💧 Comando de rega enviado!");
-            setTimeout(fetchHistoryFromSupabase, 2000);
+
+            toast(
+                "💧 Comando de rega enviado!"
+            );
+
+            setTimeout(
+                fetchHistoryFromSupabase,
+                2000
+            );
+
         } else {
-            const erro = await resposta.text();
-            console.error("[Supabase] Erro:", erro);
-            toast("❌ Erro ao enviar comando.");
+
+            const erro =
+                await resposta.text();
+
+            console.error(
+                "[Supabase] Erro:",
+                erro
+            );
+
+            toast(
+                "❌ Erro ao enviar comando."
+            );
         }
+
     } catch (erro) {
-        console.error("[Supabase] Erro:", erro);
-        toast("❌ Não foi possível conectar ao Supabase.");
+
+        console.error(
+            "[Supabase] Erro:",
+            erro
+        );
+
+        toast(
+            "❌ Não foi possível conectar ao Supabase."
+        );
     }
 }
 
-const waterBtn = document.getElementById("waterBtn");
+// ======================================================
+// BOTÃO REGAR
+// ======================================================
+const waterBtn =
+    document.getElementById(
+        "waterBtn"
+    );
+
 if (waterBtn) {
-    waterBtn.onclick = waterNow;
+
+    waterBtn.onclick =
+        waterNow;
 }
 
 // ======================================================
-// CONFIGURAR HORÁRIO / MODAL
+// CONFIGURAR HORÁRIO
 // ======================================================
-const scheduleBtn = document.getElementById("scheduleBtn");
+const scheduleBtn =
+    document.getElementById(
+        "scheduleBtn"
+    );
+
 if (scheduleBtn) {
+
     scheduleBtn.onclick = () => {
-        document.getElementById("modalTitle").textContent = "Configurar irrigação";
-        document.getElementById("modalBg").classList.add("show");
+
+        document.getElementById(
+            "modalTitle"
+        ).textContent =
+            "Configurar irrigação";
+
+        document.getElementById(
+            "modalBg"
+        ).classList.add("show");
     };
 }
 
-const closeModal = document.getElementById("closeModal");
+// ======================================================
+// FECHAR MODAL
+// ======================================================
+const closeModal =
+    document.getElementById(
+        "closeModal"
+    );
+
 if (closeModal) {
+
     closeModal.onclick = () => {
-        document.getElementById("modalBg").classList.remove("show");
+
+        document.getElementById(
+            "modalBg"
+        ).classList.remove("show");
     };
 }
 
-const saveModal = document.getElementById("saveModal");
+// ======================================================
+// SALVAR HORÁRIO
+// ======================================================
+const saveModal =
+    document.getElementById(
+        "saveModal"
+    );
+
 if (saveModal) {
-      saveModal.onclick = () => {
-        const time = document.getElementById("scheduleTime").value;
-    
-        document.getElementById("modalBg").classList.remove("show");
-        toast("🗓️ Irrigação agendada para " + time + ".");
+
+    saveModal.onclick = () => {
+
+        const time =
+            document.getElementById(
+                "scheduleTime"
+            ).value;
+
+        document.getElementById(
+            "modalBg"
+        ).classList.remove("show");
+
+        toast(
+            "🗓️ Irrigação agendada para " +
+            time +
+            "."
+        );
     };
 }
 
 // ======================================================
 // ADICIONAR PLANTA
 // ======================================================
-const addPlant = document.getElementById("addPlant");
-if (addPlant) {
-    addPlant.onclick = () => {
-        const name = prompt("Nome da nova planta:");
+const addPlant =
+    document.getElementById(
+        "addPlant"
+    );
 
-        if (name && name.trim()) {
+if (addPlant) {
+
+    addPlant.onclick = () => {
+
+        const name =
+            prompt(
+                "Nome da nova planta:"
+            );
+
+        if (
+            name &&
+            name.trim()
+        ) {
+
             plants.push({
+
                 id: Date.now(),
-                name: name.trim(),
+
+                name:
+                    name.trim(),
+
                 icon: "🌱",
-                img: "img/jiboia.png", // Imagem padrão
+
+                img:
+                    "img/jiboia.png",
+
                 humidity: 50,
-                status: "Atenção",
-                color: "orange",
-                time: "agora"
+
+                status:
+                    "Atenção",
+
+                color:
+                    "orange",
+
+                time:
+                    "agora"
             });
 
             render();
-            toast("🌱 " + name + " adicionada!");
+
+            toast(
+                "🌱 " +
+                name +
+                " adicionada!"
+            );
         }
     };
 }
 
 // ======================================================
-// TOGGLES & CONFIGURAÇÕES
+// TOGGLES
 // ======================================================
-document.querySelectorAll(".toggle").forEach(t => {
-    t.onclick = () => {
-        t.classList.toggle("on");
+document
+    .querySelectorAll(".toggle")
+    .forEach(t => {
+
+        t.onclick = () => {
+
+            t.classList.toggle("on");
+
+            toast(
+
+                t.dataset.toggle === "auto"
+
+                    ?
+
+                    (
+                        t.classList.contains("on")
+
+                            ?
+                            "🤖 Irrigação automática ativada"
+
+                            :
+                            "Irrigação automática desativada"
+                    )
+
+                    :
+
+                    (
+                        t.classList.contains("on")
+
+                            ?
+                            "🔔 Notificações ativadas"
+
+                            :
+                            "🔕 Notificações desativadas"
+                    )
+            );
+        };
+    });
+
+// ======================================================
+// INTERVALO DO SENSOR
+// ======================================================
+const sensorInterval =
+    document.getElementById(
+        "sensorInterval"
+    );
+
+if (sensorInterval) {
+
+    sensorInterval.onclick = () => {
 
         toast(
-            t.dataset.toggle === "auto"
-                ? (t.classList.contains("on")
-                    ? "🤖 Irrigação automática ativada"
-                    : "Irrigação automática desativada")
-                : (t.classList.contains("on")
-                    ? "🔔 Notificações ativadas"
-                    : "🔕 Notificações desativadas")
+            "⏱️ Intervalos disponíveis: 1, 5, 10 ou 15 minutos."
         );
-    };
-});
-
-const sensorInterval = document.getElementById("sensorInterval");
-if (sensorInterval) {
-    sensorInterval.onclick = () => {
-        toast("⏱️ Intervalos disponíveis: 1, 5, 10 ou 15 minutos.");
     };
 }
 
@@ -559,5 +1218,21 @@ if (sensorInterval) {
 // INICIALIZAÇÃO
 // ======================================================
 render();
+
+// Busca umidade imediatamente
+fetchHumidityFromSupabase();
+
+// Busca histórico
 fetchHistoryFromSupabase();
-setInterval(fetchHistoryFromSupabase, 10000);
+
+// Atualiza umidade a cada 10 segundos
+setInterval(
+    fetchHumidityFromSupabase,
+    10000
+);
+
+// Atualiza histórico a cada 10 segundos
+setInterval(
+    fetchHistoryFromSupabase,
+    10000
+);
