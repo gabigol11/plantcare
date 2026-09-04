@@ -17,7 +17,7 @@ const plants = [
         name: "Samambaia",
         icon: "🌿",
         img: "img/samambaia.png",
-        humidity: 70,
+        humidity: 80,
         status: "Ideal",
         color: "green",
         time: "há 5 min"
